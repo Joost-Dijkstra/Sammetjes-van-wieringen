@@ -1,0 +1,555 @@
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=IM+Fell+English+SC&display=swap");
+
+:root {
+  --common: #728f52;
+  --rare: #557c98;
+  --legendary: #b6893a;
+  --ink: #4b3827;
+  --ink-soft: #73553a;
+  --panel: rgba(241, 226, 190, 0.9);
+  --panel-deep: rgba(221, 195, 146, 0.92);
+  --paper: #e9d4ab;
+  --paper-light: #f8efd8;
+  --shadow: 0 18px 45px rgba(79, 52, 25, 0.24);
+  --border: rgba(106, 69, 36, 0.4);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: "Cormorant Garamond", serif;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 20% 15%, rgba(255, 247, 214, 0.45), transparent 20%),
+    radial-gradient(circle at 80% 12%, rgba(191, 142, 73, 0.18), transparent 24%),
+    linear-gradient(180deg, #d9b980 0%, #b18755 100%);
+}
+
+.title-font {
+  font-family: "IM Fell English SC", serif;
+  line-height: 1;
+  letter-spacing: 0.04em;
+}
+
+#map {
+  height: 100vh;
+  width: 100vw;
+}
+
+.leaflet-container {
+  background: #d7c097;
+  font: inherit;
+  filter: sepia(0.42) saturate(0.8) hue-rotate(-12deg) contrast(0.96);
+}
+
+.leaflet-control-zoom {
+  margin-bottom: 112px !important;
+}
+
+.leaflet-control-attribution {
+  border-radius: 14px 0 0 0;
+  border-top: 1px solid var(--border);
+  border-left: 1px solid var(--border);
+  background: rgba(239, 222, 184, 0.88) !important;
+  color: var(--ink-soft);
+}
+
+.aurora-overlay {
+  background:
+    radial-gradient(circle at 18% 12%, rgba(255, 241, 199, 0.28), transparent 20%),
+    radial-gradient(circle at 82% 20%, rgba(141, 88, 36, 0.18), transparent 18%),
+    linear-gradient(180deg, rgba(114, 72, 37, 0.14), rgba(55, 34, 18, 0.2)),
+    repeating-linear-gradient(
+      0deg,
+      rgba(120, 81, 43, 0.04) 0 2px,
+      rgba(255, 247, 230, 0.02) 2px 5px
+    );
+  mix-blend-mode: multiply;
+}
+
+.soft-panel {
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background:
+    linear-gradient(180deg, rgba(249, 239, 211, 0.96), rgba(224, 196, 146, 0.9)),
+    repeating-linear-gradient(
+      90deg,
+      rgba(122, 81, 46, 0.03) 0 3px,
+      rgba(255, 248, 230, 0.02) 3px 7px
+    );
+  box-shadow: var(--shadow);
+  position: relative;
+  padding: 18px;
+}
+
+.soft-panel::before {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border: 1px solid rgba(127, 91, 52, 0.22);
+  border-radius: 15px;
+  pointer-events: none;
+}
+
+.soft-panel--compact {
+  padding: 14px;
+}
+
+.soft-panel--modal {
+  padding: 22px;
+  max-height: min(88vh, 760px);
+  overflow-y: auto;
+}
+
+.soft-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(107, 71, 41, 0.46);
+  border-radius: 999px;
+  background:
+    linear-gradient(180deg, rgba(250, 237, 205, 0.98), rgba(212, 177, 125, 0.98));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 247, 228, 0.85),
+    0 8px 18px rgba(83, 54, 29, 0.18);
+  color: var(--ink);
+  cursor: pointer;
+  font-family: "IM Fell English SC", serif;
+  font-size: 0.88rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.82rem 1.2rem;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    background 180ms ease;
+}
+
+.soft-button:hover,
+.soft-button:focus-visible {
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 248, 228, 0.92),
+    0 12px 24px rgba(83, 54, 29, 0.26);
+  outline: none;
+}
+
+.soft-button--small {
+  font-size: 0.92rem;
+  padding: 0.52rem 0.9rem;
+}
+
+.soft-button--primary {
+  background: linear-gradient(180deg, #f8d889 0%, #c99741 100%);
+  color: #4f3414;
+}
+
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 999px;
+  background: rgba(247, 236, 206, 0.8);
+  border: 1px solid rgba(116, 79, 47, 0.18);
+  color: var(--ink);
+  padding: 0.42rem 0.75rem;
+  box-shadow: inset 0 1px 0 rgba(255, 247, 229, 0.72);
+  font-size: 0.86rem;
+}
+
+.status-chip--subtle {
+  background: rgba(232, 212, 172, 0.9);
+}
+
+.nav-button {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: rgba(86, 59, 31, 0.78);
+  cursor: pointer;
+  font-family: "IM Fell English SC", serif;
+  font-size: 0.88rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.85rem 0.9rem;
+  transition:
+    background 180ms ease,
+    color 180ms ease,
+    transform 180ms ease;
+}
+
+.nav-button:hover,
+.nav-button:focus-visible {
+  background: rgba(214, 184, 137, 0.5);
+  color: var(--ink);
+  outline: none;
+}
+
+.nav-button.is-active {
+  background: linear-gradient(180deg, rgba(248, 231, 190, 0.96), rgba(206, 161, 98, 0.92));
+  color: var(--ink);
+  box-shadow: inset 0 1px 0 rgba(255, 247, 228, 0.88);
+}
+
+.nav-button__icon {
+  font-size: 1.1rem;
+}
+
+.view-panel {
+  pointer-events: none;
+}
+
+.view-panel > * {
+  pointer-events: auto;
+}
+
+.radar-shell {
+  position: relative;
+}
+
+.radar-grid {
+  position: relative;
+  aspect-ratio: 1;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 999px;
+  border: 2px solid rgba(109, 76, 42, 0.56);
+  background:
+    radial-gradient(circle at center, rgba(242, 224, 178, 0.28), rgba(101, 65, 34, 0.92)),
+    linear-gradient(180deg, rgba(214, 174, 108, 0.18), rgba(49, 28, 14, 0.78));
+  box-shadow:
+    inset 0 0 0 1px rgba(251, 238, 209, 0.18),
+    inset 0 0 28px rgba(241, 210, 152, 0.12),
+    0 18px 38px rgba(43, 25, 12, 0.32);
+}
+
+.radar-ring,
+.radar-cross {
+  position: absolute;
+  opacity: 0.28;
+}
+
+.radar-ring {
+  inset: 18%;
+  border: 1px solid rgba(246, 229, 191, 0.42);
+  border-radius: 999px;
+}
+
+.radar-ring--outer {
+  inset: 4%;
+}
+
+.radar-cross--vertical {
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  background: linear-gradient(180deg, transparent, rgba(201, 255, 232, 0.55), transparent);
+  background: linear-gradient(180deg, transparent, rgba(244, 223, 181, 0.48), transparent);
+  transform: translateX(-50%);
+}
+
+.radar-cross--horizontal {
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(244, 223, 181, 0.48), transparent);
+  transform: translateY(-50%);
+}
+
+.radar-sweep {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 50%;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(249, 213, 143, 0.78), rgba(249, 213, 143, 0));
+  box-shadow: 0 0 18px rgba(244, 204, 125, 0.4);
+  transform-origin: left center;
+  animation: radarSweep 3.3s linear infinite;
+}
+
+.radar-center {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: rgba(252, 239, 204, 0.95);
+  box-shadow: 0 0 18px rgba(250, 221, 155, 0.42);
+  transform: translate(-50%, -50%);
+}
+
+.radar-signal-layer {
+  position: absolute;
+  inset: 0;
+}
+
+.radar-signal {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  color: white;
+  transform: translate(-50%, -50%);
+}
+
+.radar-signal::before,
+.radar-signal::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.radar-signal::before {
+  background: currentColor;
+  box-shadow: 0 0 16px currentColor;
+}
+
+.radar-signal::after {
+  inset: -7px;
+  border: 2px solid currentColor;
+  opacity: 0.68;
+  animation: pulseRing 1.7s ease-out infinite;
+}
+
+.radar-signal--common {
+  color: var(--common);
+}
+
+.radar-signal--rare {
+  color: var(--rare);
+}
+
+.radar-signal--legendary {
+  color: var(--legendary);
+}
+
+.radar-distance-badge {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  white-space: nowrap;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.88);
+  color: var(--ink);
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 0.18rem 0.45rem;
+  transform: translateX(-50%);
+  box-shadow: 0 4px 12px rgba(24, 69, 58, 0.12);
+}
+
+.contact-chip {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.7rem;
+  border-radius: 18px;
+  border: 1px solid rgba(112, 75, 42, 0.26);
+  background: rgba(245, 232, 199, 0.86);
+  padding: 0.85rem 0.95rem;
+  box-shadow: inset 0 1px 0 rgba(255, 246, 226, 0.86);
+}
+
+.contact-chip__dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  box-shadow: 0 0 12px currentColor;
+}
+
+.contact-chip__meta {
+  color: rgba(88, 60, 34, 0.76);
+  font-size: 0.88rem;
+}
+
+.contact-chip--common {
+  color: var(--common);
+}
+
+.contact-chip--rare {
+  color: var(--rare);
+}
+
+.contact-chip--legendary {
+  color: var(--legendary);
+}
+
+.rarity-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  color: white;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  padding: 0.4rem 0.8rem;
+}
+
+.rarity-pill--common {
+  background: rgba(76, 182, 107, 0.9);
+}
+
+.rarity-pill--rare {
+  background: rgba(78, 141, 255, 0.9);
+}
+
+.rarity-pill--legendary {
+  background: rgba(240, 191, 76, 0.95);
+  color: #5c4600;
+}
+
+.book-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  border-radius: 20px;
+  border: 1px solid rgba(112, 75, 42, 0.26);
+  background: rgba(245, 232, 199, 0.9);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 246, 226, 0.86),
+    0 10px 24px rgba(74, 46, 24, 0.14);
+  overflow: hidden;
+  padding: 0.75rem;
+}
+
+.book-card img {
+  display: block;
+  width: 100%;
+  height: 134px;
+  object-fit: cover;
+  border-radius: 18px;
+}
+
+.book-card--undiscovered img {
+  filter: grayscale(1) brightness(0.1);
+  opacity: 0.48;
+}
+
+.book-card__name {
+  font-family: "IM Fell English SC", serif;
+  font-size: 1rem;
+  line-height: 1.1;
+  letter-spacing: 0.03em;
+}
+
+.book-card__description {
+  color: rgba(79, 58, 37, 0.82);
+  font-size: 0.96rem;
+  line-height: 1.45;
+}
+
+.book-card__mystery {
+  color: rgba(79, 58, 37, 0.6);
+  font-size: 0.92rem;
+  font-style: italic;
+  line-height: 1.45;
+}
+
+.toast {
+  position: absolute;
+  left: 50%;
+  bottom: 102px;
+  z-index: 1050;
+  min-width: 220px;
+  max-width: min(90vw, 360px);
+  border: 1px solid rgba(109, 74, 43, 0.5);
+  border-radius: 999px;
+  background: rgba(81, 51, 28, 0.94);
+  box-shadow: 0 16px 38px rgba(36, 22, 12, 0.36);
+  color: #f7ecd1;
+  font-size: 1rem;
+  font-weight: 700;
+  padding: 0.92rem 1.1rem;
+  text-align: center;
+  transform: translate(-50%, 18px);
+  opacity: 0;
+  transition:
+    opacity 220ms ease,
+    transform 220ms ease;
+}
+
+.toast.is-visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.player-marker {
+  position: relative;
+  width: 22px;
+  height: 22px;
+}
+
+.player-marker::before,
+.player-marker::after {
+  content: "";
+  position: absolute;
+  border-radius: 999px;
+}
+
+.player-marker::before {
+  inset: 0;
+  background: #f7ecd4;
+  box-shadow:
+    0 0 0 6px rgba(169, 125, 67, 0.22),
+    0 0 24px rgba(122, 83, 43, 0.34);
+}
+
+.player-marker::after {
+  inset: 5px;
+  background: #8b5a2b;
+}
+
+@keyframes radarSweep {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulseRing {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.72;
+  }
+  100% {
+    transform: scale(1.55);
+    opacity: 0;
+  }
+}
+
+@media (max-width: 430px) {
+  .soft-panel {
+    border-radius: 24px;
+    padding: 16px;
+  }
+
+  .nav-button {
+    font-size: 0.9rem;
+    padding: 0.78rem 0.7rem;
+  }
+
+  .nav-button span:last-child {
+    display: none;
+  }
+}
