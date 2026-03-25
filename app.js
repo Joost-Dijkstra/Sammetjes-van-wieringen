@@ -27,6 +27,7 @@ const CONFIG = {
   ]
 };
 const DATA_VERSION_KEY = "sammeltjes-data-version";
+const PANEL_STATE_KEY = "sammeltjes-ui-panels";
 
 const state = {
   map: null,
@@ -57,7 +58,8 @@ const state = {
   simulationTimer: null,
   toastTimer: null,
   isRefreshingData: false,
-  lastDataVersion: localStorage.getItem(DATA_VERSION_KEY) || null
+  lastDataVersion: localStorage.getItem(DATA_VERSION_KEY) || null,
+  collapsedPanels: loadCollapsedPanelState()
 };
 
 const ui = {};
@@ -66,6 +68,7 @@ document.addEventListener("DOMContentLoaded", init);
 
 async function init() {
   cacheDom();
+  applyCollapsedPanelState();
   bindUi();
   initMap();
 
@@ -110,6 +113,13 @@ function cacheDom() {
   ui.discoveryDescription = document.getElementById("discovery-description");
   ui.collectButton = document.getElementById("collect-btn");
   ui.navButtons = Array.from(document.querySelectorAll("[data-view]"));
+  ui.hudPanel = document.getElementById("hud-panel");
+  ui.miniRadarPanelToggle = document.getElementById("toggle-mini-radar-panel");
+  ui.hudPanelToggle = document.getElementById("toggle-hud-panel");
+  ui.scanPanelToggle = document.getElementById("toggle-scan-panel");
+  ui.hudPanelBody = document.getElementById("hud-panel-body");
+  ui.miniRadarPanelBody = document.getElementById("mini-radar-panel-body");
+  ui.scanPanelBody = document.getElementById("scan-panel-body");
 }
 
 function bindUi() {
@@ -133,8 +143,15 @@ function bindUi() {
   document.getElementById("dismiss-discovery-btn").addEventListener("click", () => dismissDiscovery(true));
   ui.collectButton.addEventListener("click", collectCurrentDiscovery);
 
+  bindCollapsiblePanel("hud", ui.hudPanel, ui.hudPanelToggle);
+  bindCollapsiblePanel("mini-radar", ui.miniRadarPanel, ui.miniRadarPanelToggle);
+  bindCollapsiblePanel("scan", ui.scanPanel, ui.scanPanelToggle);
+
   ui.navButtons.forEach((button) => {
-    button.addEventListener("click", () => switchView(button.dataset.view));
+    button.addEventListener("click", () => {
+      const view = button.dataset.view;
+      switchView(state.currentView === view && view !== "map" ? "map" : view);
+    });
   });
 
   window.addEventListener("keydown", handleDemoMovement);
@@ -154,6 +171,49 @@ function bindUi() {
     state.lastDataVersion = event.newValue;
     void refreshSammeltjesData({ silent: false });
   });
+}
+
+function bindCollapsiblePanel(key, panel, button) {
+  if (!panel || !button) {
+    return;
+  }
+
+  button.addEventListener("click", () => {
+    setPanelCollapsed(key, panel, button, !panel.classList.contains("is-collapsed"));
+  });
+}
+
+function applyCollapsedPanelState() {
+  const definitions = [
+    ["hud", ui.hudPanel, ui.hudPanelToggle],
+    ["mini-radar", ui.miniRadarPanel, ui.miniRadarPanelToggle],
+    ["scan", ui.scanPanel, ui.scanPanelToggle]
+  ];
+
+  for (const [key, panel, button] of definitions) {
+    if (!panel || !button) {
+      continue;
+    }
+
+    setPanelCollapsed(key, panel, button, Boolean(state.collapsedPanels[key]), false);
+  }
+}
+
+function setPanelCollapsed(key, panel, button, collapsed, persist = true) {
+  const controlledBodyId = button.getAttribute("aria-controls");
+  const controlledBody = controlledBodyId ? document.getElementById(controlledBodyId) : null;
+
+  panel.classList.toggle("is-collapsed", collapsed);
+  if (controlledBody) {
+    controlledBody.classList.toggle("hidden", collapsed);
+  }
+  button.textContent = collapsed ? "Openen" : "Inklappen";
+  button.setAttribute("aria-expanded", String(!collapsed));
+
+  state.collapsedPanels[key] = collapsed;
+  if (persist) {
+    saveCollapsedPanelState(state.collapsedPanels);
+  }
 }
 
 function initMap() {
@@ -1102,6 +1162,27 @@ function loadDiscoveredIds() {
   }
 }
 
+function loadCollapsedPanelState() {
+  const defaults = {
+    hud: false,
+    "mini-radar": window.matchMedia("(max-width: 767px)").matches,
+    scan: window.matchMedia("(max-width: 767px)").matches
+  };
+
+  try {
+    return {
+      ...defaults,
+      ...JSON.parse(localStorage.getItem(PANEL_STATE_KEY) || "{}")
+    };
+  } catch (error) {
+    return defaults;
+  }
+}
+
+function saveCollapsedPanelState(value) {
+  localStorage.setItem(PANEL_STATE_KEY, JSON.stringify(value));
+}
+
 function persistDiscoveredIds() {
   localStorage.setItem(CONFIG.PLAYER_STORAGE_KEY, JSON.stringify(Array.from(state.discovered)));
 }
@@ -1165,19 +1246,19 @@ function isEntityAvailableNow(entity, now = new Date()) {
   }
 
   if (entity.availabilityMode === "morning") {
-    return hour >= 6 && hour < 12;
+    return hour >= 6 && hour < 14;
   }
 
   if (entity.availabilityMode === "afternoon") {
-    return hour >= 12 && hour < 18;
+    return hour >= 11 && hour < 19;
   }
 
   if (entity.availabilityMode === "evening") {
-    return hour >= 18 && hour < 22;
+    return hour >= 17 && hour < 23;
   }
 
   if (entity.availabilityMode === "night") {
-    return hour >= 22 || hour < 6;
+    return hour >= 21 || hour < 7;
   }
 
   const activeHours = getRandomActiveHours(entity, now);
@@ -1188,9 +1269,12 @@ function getRandomActiveHours(entity, now) {
   const seed = createSeed(`${entity.id}-${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`);
   const generator = createSeededRandom(seed);
   const selectedHours = new Set();
+  const preferredHours = [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22];
+  const allHours = Array.from({ length: 24 }, (_, hour) => hour);
 
   while (selectedHours.size < entity.randomHoursPerDay) {
-    selectedHours.add(Math.floor(generator() * 24));
+    const pool = generator() < 0.78 ? preferredHours : allHours;
+    selectedHours.add(pool[Math.floor(generator() * pool.length)]);
   }
 
   return selectedHours;

@@ -25,97 +25,142 @@
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
       crossorigin=""
     />
-    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="style.css?v=20260325b" />
   </head>
   <body class="fantasy-ui antialiased">
     <div id="app" class="relative min-h-screen overflow-hidden">
       <div id="map" class="absolute inset-0"></div>
       <div class="pointer-events-none absolute inset-0 aurora-overlay"></div>
 
-      <header class="absolute inset-x-0 top-0 z-[900] p-4">
-        <div class="mx-auto max-w-md soft-panel">
-          <div class="flex items-start justify-between gap-3">
+      <header class="pointer-events-none absolute inset-x-0 top-0 z-[900] p-4">
+        <div id="hud-panel" class="pointer-events-auto mx-auto max-w-md soft-panel collapsible-panel">
+          <div class="panel-header-row">
             <div>
               <p class="text-[11px] uppercase tracking-[0.35em] text-emerald-700/80">Locatiegame</p>
               <h1 class="title-font text-2xl text-slate-800">Sammeltjes van Wieringen</h1>
-              <p id="gps-status" class="mt-1 text-sm text-slate-600">
-                Zoekt je GPS... tik op de kaart voor demo-modus als dat nodig is.
-              </p>
             </div>
-            <div class="flex shrink-0 flex-col gap-2">
-              <button id="toggle-all-btn" class="soft-button soft-button--small" type="button">
-                Toon alles
-              </button>
-              <button id="demo-toggle-btn" class="soft-button soft-button--small" type="button">
-                Demo besturen
-              </button>
-              <button id="recenter-btn" class="soft-button soft-button--small" type="button">
-                Mijn plek
-              </button>
-            </div>
+            <button
+              id="toggle-hud-panel"
+              class="panel-toggle-button"
+              type="button"
+              aria-expanded="true"
+              aria-controls="hud-panel-body"
+            >
+              Inklappen
+            </button>
           </div>
 
-          <div class="mt-3 flex flex-wrap gap-2 text-xs">
-            <span class="status-chip">
-              Gevonden:
-              <strong id="found-counter">0 / 0</strong>
-            </span>
-            <span class="status-chip">
-              Actief:
-              <strong id="active-counter">0</strong>
-            </span>
-            <span class="status-chip">
-              Terrein:
-              <strong id="terrain-status">basis</strong>
-            </span>
-          </div>
+          <div id="hud-panel-body" class="panel-collapse-body">
+            <div class="mt-3 flex items-start justify-between gap-3">
+              <div>
+                <p id="gps-status" class="mt-1 text-sm text-slate-600">
+                  Zoekt je GPS... tik op de kaart voor demo-modus als dat nodig is.
+                </p>
+              </div>
+              <div class="flex shrink-0 flex-col gap-2">
+                <button id="toggle-all-btn" class="soft-button soft-button--small" type="button">
+                  Toon alles
+                </button>
+                <button id="demo-toggle-btn" class="soft-button soft-button--small" type="button">
+                  Demo besturen
+                </button>
+                <button id="recenter-btn" class="soft-button soft-button--small" type="button">
+                  Mijn plek
+                </button>
+              </div>
+            </div>
 
-          <p id="demo-hint" class="mt-3 text-xs text-slate-500">
-            Thuis testen: zet demo besturen aan en gebruik de pijltjestoetsen of tik op de kaart.
-          </p>
+            <div class="mt-3 flex flex-wrap gap-2 text-xs">
+              <span class="status-chip">
+                Gevonden:
+                <strong id="found-counter">0 / 0</strong>
+              </span>
+              <span class="status-chip">
+                Actief:
+                <strong id="active-counter">0</strong>
+              </span>
+              <span class="status-chip">
+                Terrein:
+                <strong id="terrain-status">basis</strong>
+              </span>
+            </div>
+
+            <p id="demo-hint" class="mt-3 text-xs text-slate-500">
+              Thuis testen: zet demo besturen aan en gebruik de pijltjestoetsen of tik op de kaart.
+            </p>
+          </div>
         </div>
       </header>
 
-      <aside id="mini-radar-panel" class="absolute left-4 top-[138px] z-[850] w-40 soft-panel soft-panel--compact">
-        <div class="mb-2 flex items-center justify-between gap-2">
+      <aside
+        id="mini-radar-panel"
+        class="absolute left-4 top-[138px] z-[850] w-40 soft-panel soft-panel--compact collapsible-panel"
+      >
+        <div class="panel-header-row">
           <div>
             <p class="text-[11px] uppercase tracking-[0.28em] text-emerald-700/70">Radar</p>
             <p class="title-font text-lg text-slate-800">60 meter</p>
           </div>
-          <button id="open-radar-btn" class="soft-button soft-button--small" type="button">
-            Open
-          </button>
-        </div>
-
-        <div class="radar-shell radar-shell--mini">
-          <div class="radar-grid">
-            <div class="radar-ring radar-ring--inner"></div>
-            <div class="radar-ring radar-ring--outer"></div>
-            <div class="radar-cross radar-cross--vertical"></div>
-            <div class="radar-cross radar-cross--horizontal"></div>
-            <div class="radar-sweep"></div>
-            <div class="radar-center"></div>
-            <div id="mini-radar-signals" class="radar-signal-layer"></div>
+          <div class="flex items-center gap-2">
+            <button id="open-radar-btn" class="soft-button soft-button--small" type="button">
+              Open
+            </button>
+            <button
+              id="toggle-mini-radar-panel"
+              class="panel-toggle-button"
+              type="button"
+              aria-expanded="true"
+              aria-controls="mini-radar-panel-body"
+            >
+              Inklappen
+            </button>
           </div>
         </div>
 
-        <p id="mini-radar-summary" class="mt-2 text-xs text-slate-600">
-          Nog geen signalen binnen bereik.
-        </p>
+        <div id="mini-radar-panel-body" class="panel-collapse-body">
+          <div class="mt-2 radar-shell radar-shell--mini">
+            <div class="radar-grid">
+              <div class="radar-ring radar-ring--inner"></div>
+              <div class="radar-ring radar-ring--outer"></div>
+              <div class="radar-cross radar-cross--vertical"></div>
+              <div class="radar-cross radar-cross--horizontal"></div>
+              <div class="radar-sweep"></div>
+              <div class="radar-center"></div>
+              <div id="mini-radar-signals" class="radar-signal-layer"></div>
+            </div>
+          </div>
+
+          <p id="mini-radar-summary" class="mt-2 text-xs text-slate-600">
+            Nog geen signalen binnen bereik.
+          </p>
+        </div>
       </aside>
 
       <section
         id="scan-panel"
-        class="absolute inset-x-4 bottom-[104px] z-[860] mx-auto max-w-md soft-panel soft-panel--compact"
+        class="absolute inset-x-4 bottom-[104px] z-[860] mx-auto max-w-md soft-panel soft-panel--compact collapsible-panel"
       >
-        <div class="flex items-center justify-between gap-3">
+        <div class="panel-header-row">
           <div>
             <p class="text-[11px] uppercase tracking-[0.28em] text-emerald-700/70">Eilandscan</p>
             <p class="title-font text-lg text-slate-800">Alle Sammeltjes</p>
           </div>
-          <span id="scan-summary" class="status-chip status-chip--subtle">0 zichtbaar</span>
+          <div class="flex items-center gap-2">
+            <span id="scan-summary" class="status-chip status-chip--subtle">0 zichtbaar</span>
+            <button
+              id="toggle-scan-panel"
+              class="panel-toggle-button"
+              type="button"
+              aria-expanded="true"
+              aria-controls="scan-panel-body"
+            >
+              Inklappen
+            </button>
+          </div>
         </div>
-        <div id="scan-list" class="mt-3 max-h-[168px] space-y-2 overflow-y-auto pr-1"></div>
+        <div id="scan-panel-body" class="panel-collapse-body">
+          <div id="scan-list" class="mt-3 max-h-[168px] space-y-2 overflow-y-auto pr-1"></div>
+        </div>
       </section>
 
       <section
@@ -241,15 +286,15 @@
           "name": "Wieringer Wolkje",
           "type": "fixed",
           "biome": "lucht",
-          "lat": 52.9308,
-          "lng": 5.0194,
+          "lat": 52.935241,
+          "lng": 5.035408,
           "radius": 80,
           "rarity": "common",
           "description": "Een pluizig luchtvriendje dat graag boven de haven bij Den Oever dobbert.",
           "image": "assets/sammeltjes/wieringer-wolkje.png",
           "behavior": "shy",
           "speedKmh": 0,
-          "availabilityMode": "morning",
+          "availabilityMode": "all-day",
           "randomHoursPerDay": 6,
           "active": true
         },
@@ -283,7 +328,7 @@
           "image": "assets/sammeltjes/kwelder-sprietje.png",
           "behavior": "shy",
           "speedKmh": 0,
-          "availabilityMode": "afternoon",
+          "availabilityMode": "all-day",
           "randomHoursPerDay": 6,
           "active": true
         },
@@ -311,13 +356,13 @@
           "biome": "rietland",
           "lat": 52.9204,
           "lng": 4.9821,
-          "radius": 90,
+          "radius": 290,
           "rarity": "common",
           "description": "Een dapper schildknaapje dat tussen de rietkragen op patrouille loopt.",
           "image": "assets/sammeltjes/rietritter.png",
           "behavior": "curious",
           "speedKmh": 2.8,
-          "availabilityMode": "morning",
+          "availabilityMode": "all-day",
           "randomHoursPerDay": 6,
           "active": true
         },
@@ -360,15 +405,15 @@
           "name": "Schelpenwachter",
           "type": "roaming",
           "biome": "kust",
-          "lat": 52.9256,
-          "lng": 5.0126,
-          "radius": 70,
+          "lat": 52.92915,
+          "lng": 5.038584,
+          "radius": 270,
           "rarity": "rare",
           "description": "Een rustige strandwachter die schelpen telt en altijd een stap vooruit denkt.",
           "image": "assets/sammeltjes/schelpenwachter.png",
           "behavior": "shy",
           "speedKmh": 1.8,
-          "availabilityMode": "afternoon",
+          "availabilityMode": "all-day",
           "randomHoursPerDay": 6,
           "active": true
         },
@@ -386,7 +431,7 @@
           "behavior": "scared",
           "speedKmh": 4.8,
           "availabilityMode": "random-hours",
-          "randomHoursPerDay": 5,
+          "randomHoursPerDay": 7,
           "active": true
         },
         {
@@ -403,7 +448,7 @@
           "behavior": "shy",
           "speedKmh": 3.2,
           "availabilityMode": "random-hours",
-          "randomHoursPerDay": 3,
+          "randomHoursPerDay": 4,
           "active": true
         },
         {
@@ -411,15 +456,15 @@
           "name": "Schapenherdertje",
           "type": "roaming",
           "biome": "schaapsveld",
-          "lat": 52.8938,
-          "lng": 4.9772,
-          "radius": 90,
+          "lat": 52.921578,
+          "lng": 4.995134,
+          "radius": 290,
           "rarity": "common",
           "description": "Een klein Sammeltje dat altijd tussen de Wieringer schapen loopt en ze zachtjes bijeen houdt.",
           "image": "assets/sammeltjes/schapenherdertje.png",
           "behavior": "curious",
           "speedKmh": 1.7,
-          "availabilityMode": "morning",
+          "availabilityMode": "all-day",
           "randomHoursPerDay": 6,
           "active": true
         },
@@ -436,7 +481,7 @@
           "image": "assets/sammeltjes/boer-bietje.png",
           "behavior": "curious",
           "speedKmh": 2.1,
-          "availabilityMode": "afternoon",
+          "availabilityMode": "all-day",
           "randomHoursPerDay": 6,
           "active": true
         },
@@ -445,8 +490,8 @@
           "name": "Molenmaatje",
           "type": "fixed",
           "biome": "molen",
-          "lat": 52.9098,
-          "lng": 4.9315,
+          "lat": 52.934371,
+          "lng": 5.026314,
           "radius": 55,
           "rarity": "rare",
           "description": "Een windvriend Sammeltje dat bij oude molens woont en met de wieken meedraait.",
@@ -464,13 +509,13 @@
           "biome": "haven",
           "lat": 52.9317,
           "lng": 5.0152,
-          "radius": 85,
+          "radius": 385,
           "rarity": "common",
           "description": "Een kust-Sammeltje dat kleine visnetjes verzamelt en altijd naar de zee kijkt.",
           "image": "assets/sammeltjes/nettenvissertje.png",
           "behavior": "shy",
           "speedKmh": 1.6,
-          "availabilityMode": "morning",
+          "availabilityMode": "evening",
           "randomHoursPerDay": 6,
           "active": true
         },
@@ -479,15 +524,15 @@
           "name": "Opa Duinbaard",
           "type": "fixed",
           "biome": "duin",
-          "lat": 52.8897,
-          "lng": 4.9004,
-          "radius": 70,
+          "lat": 52.890978,
+          "lng": 4.912743,
+          "radius": 270,
           "rarity": "rare",
           "description": "Een oud wijs Sammeltje met een lange baard van duingras en zand.",
           "image": "assets/sammeltjes/opa-duinbaard.png",
           "behavior": "shy",
           "speedKmh": 0,
-          "availabilityMode": "afternoon",
+          "availabilityMode": "evening",
           "randomHoursPerDay": 6,
           "active": true
         },
@@ -496,15 +541,15 @@
           "name": "Oma Wierwortel",
           "type": "roaming",
           "biome": "kruidentuin",
-          "lat": 52.9018,
-          "lng": 4.9422,
-          "radius": 90,
+          "lat": 52.910087,
+          "lng": 4.970451,
+          "radius": 169,
           "rarity": "common",
           "description": "Een vriendelijk oud Sammeltje dat kruiden en wortels verzamelt.",
           "image": "assets/sammeltjes/oma-wierwortel.png",
           "behavior": "curious",
           "speedKmh": 1.7,
-          "availabilityMode": "morning",
+          "availabilityMode": "all-day",
           "randomHoursPerDay": 6,
           "active": true
         },
@@ -513,8 +558,8 @@
           "name": "Dijkwacht",
           "type": "roaming",
           "biome": "dijk",
-          "lat": 52.9182,
-          "lng": 4.9726,
+          "lat": 52.928106,
+          "lng": 4.96511,
           "radius": 150,
           "rarity": "rare",
           "description": "Een klein waakzaam Sammeltje dat 's nachts over de dijken loopt.",
@@ -530,8 +575,8 @@
           "name": "Havenpluimpje",
           "type": "roaming",
           "biome": "haven",
-          "lat": 52.9319,
-          "lng": 5.0185,
+          "lat": 52.938722,
+          "lng": 5.032376,
           "radius": 95,
           "rarity": "common",
           "description": "Een luchtig Sammeltje dat rond de havenpalen en scheepstouwen zweeft.",
@@ -555,7 +600,7 @@
           "image": "assets/sammeltjes/mosselmop.png",
           "behavior": "shy",
           "speedKmh": 1.9,
-          "availabilityMode": "afternoon",
+          "availabilityMode": "all-day",
           "randomHoursPerDay": 6,
           "active": true
         },
@@ -564,8 +609,8 @@
           "name": "Waddenwriemel",
           "type": "roaming",
           "biome": "wad",
-          "lat": 52.9352,
-          "lng": 4.9888,
+          "lat": 52.931461,
+          "lng": 4.982468,
           "radius": 130,
           "rarity": "rare",
           "description": "Een nieuwsgierig Sammeltje dat door het wad kruipt en glinsteringen zoekt.",
@@ -573,7 +618,7 @@
           "behavior": "curious",
           "speedKmh": 2.8,
           "availabilityMode": "random-hours",
-          "randomHoursPerDay": 5,
+          "randomHoursPerDay": 7,
           "active": true
         }
       ]
@@ -583,7 +628,7 @@
       integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
       crossorigin=""
     ></script>
-    <script src="app.js"></script>
+    <script src="app.js?v=20260325b"></script>
     <script>
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {

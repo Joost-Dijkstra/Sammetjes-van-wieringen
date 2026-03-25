@@ -12,7 +12,7 @@
     "image": "assets/sammeltjes/wieringer-wolkje.png",
     "behavior": "shy",
     "speedKmh": 0,
-    "availabilityMode": "morning",
+    "availabilityMode": "all-day",
     "randomHoursPerDay": 6,
     "active": true
   },
@@ -46,7 +46,7 @@
     "image": "assets/sammeltjes/kwelder-sprietje.png",
     "behavior": "shy",
     "speedKmh": 0,
-    "availabilityMode": "afternoon",
+    "availabilityMode": "all-day",
     "randomHoursPerDay": 6,
     "active": true
   },
@@ -80,7 +80,7 @@
     "image": "assets/sammeltjes/rietritter.png",
     "behavior": "curious",
     "speedKmh": 2.8,
-    "availabilityMode": "morning",
+    "availabilityMode": "all-day",
     "randomHoursPerDay": 6,
     "active": true
   },
@@ -131,7 +131,7 @@
     "image": "assets/sammeltjes/schelpenwachter.png",
     "behavior": "shy",
     "speedKmh": 1.8,
-    "availabilityMode": "afternoon",
+    "availabilityMode": "all-day",
     "randomHoursPerDay": 6,
     "active": true
   },
@@ -149,7 +149,7 @@
     "behavior": "scared",
     "speedKmh": 4.8,
     "availabilityMode": "random-hours",
-    "randomHoursPerDay": 5,
+    "randomHoursPerDay": 7,
     "active": true
   },
   {
@@ -166,7 +166,7 @@
     "behavior": "shy",
     "speedKmh": 3.2,
     "availabilityMode": "random-hours",
-    "randomHoursPerDay": 3,
+    "randomHoursPerDay": 4,
     "active": true
   },
   {
@@ -182,7 +182,7 @@
     "image": "assets/sammeltjes/schapenherdertje.png",
     "behavior": "curious",
     "speedKmh": 1.7,
-    "availabilityMode": "morning",
+    "availabilityMode": "all-day",
     "randomHoursPerDay": 6,
     "active": true
   },
@@ -199,7 +199,7 @@
     "image": "assets/sammeltjes/boer-bietje.png",
     "behavior": "curious",
     "speedKmh": 2.1,
-    "availabilityMode": "afternoon",
+    "availabilityMode": "all-day",
     "randomHoursPerDay": 6,
     "active": true
   },
@@ -233,7 +233,7 @@
     "image": "assets/sammeltjes/nettenvissertje.png",
     "behavior": "shy",
     "speedKmh": 1.6,
-    "availabilityMode": "morning",
+    "availabilityMode": "evening",
     "randomHoursPerDay": 6,
     "active": true
   },
@@ -250,7 +250,7 @@
     "image": "assets/sammeltjes/opa-duinbaard.png",
     "behavior": "shy",
     "speedKmh": 0,
-    "availabilityMode": "afternoon",
+    "availabilityMode": "evening",
     "randomHoursPerDay": 6,
     "active": true
   },
@@ -267,7 +267,7 @@
     "image": "assets/sammeltjes/oma-wierwortel.png",
     "behavior": "curious",
     "speedKmh": 1.7,
-    "availabilityMode": "morning",
+    "availabilityMode": "all-day",
     "randomHoursPerDay": 6,
     "active": true
   },
@@ -318,7 +318,7 @@
     "image": "assets/sammeltjes/mosselmop.png",
     "behavior": "shy",
     "speedKmh": 1.9,
-    "availabilityMode": "afternoon",
+    "availabilityMode": "all-day",
     "randomHoursPerDay": 6,
     "active": true
   },
@@ -336,7 +336,7 @@
     "behavior": "curious",
     "speedKmh": 2.8,
     "availabilityMode": "random-hours",
-    "randomHoursPerDay": 5,
+    "randomHoursPerDay": 7,
     "active": true
   }
 ]
