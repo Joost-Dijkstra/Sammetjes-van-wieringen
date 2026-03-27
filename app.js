@@ -55,6 +55,7 @@ const state = {
   discoveryQueue: [],
   pendingDiscoveries: new Set(),
   currentDiscoveryId: null,
+  currentBookDetailId: null,
   simulationTimer: null,
   toastTimer: null,
   isRefreshingData: false,
@@ -112,6 +113,12 @@ function cacheDom() {
   ui.discoveryType = document.getElementById("discovery-type");
   ui.discoveryDescription = document.getElementById("discovery-description");
   ui.collectButton = document.getElementById("collect-btn");
+  ui.bookDetailModal = document.getElementById("book-detail-modal");
+  ui.bookDetailName = document.getElementById("book-detail-name");
+  ui.bookDetailImage = document.getElementById("book-detail-image");
+  ui.bookDetailRarity = document.getElementById("book-detail-rarity");
+  ui.bookDetailType = document.getElementById("book-detail-type");
+  ui.bookDetailDescription = document.getElementById("book-detail-description");
   ui.navButtons = Array.from(document.querySelectorAll("[data-view]"));
   ui.hudPanel = document.getElementById("hud-panel");
   ui.miniRadarPanelToggle = document.getElementById("toggle-mini-radar-panel");
@@ -141,7 +148,10 @@ function bindUi() {
   document.getElementById("close-radar-btn").addEventListener("click", () => switchView("map"));
   document.getElementById("close-book-btn").addEventListener("click", () => switchView("map"));
   document.getElementById("dismiss-discovery-btn").addEventListener("click", () => dismissDiscovery(true));
+  document.getElementById("dismiss-book-detail-btn").addEventListener("click", closeBookDetail);
+  document.getElementById("book-detail-backdrop").addEventListener("click", closeBookDetail);
   ui.collectButton.addEventListener("click", collectCurrentDiscovery);
+  ui.bookGrid.addEventListener("click", handleBookGridClick);
 
   bindCollapsiblePanel("hud", ui.hudPanel, ui.hudPanelToggle);
   bindCollapsiblePanel("mini-radar", ui.miniRadarPanel, ui.miniRadarPanelToggle);
@@ -317,8 +327,11 @@ function replaceEntities(records) {
   state.discoveryQueue = [];
   state.pendingDiscoveries.clear();
   state.currentDiscoveryId = null;
+  state.currentBookDetailId = null;
   ui.discoveryModal.classList.add("hidden");
   ui.discoveryModal.classList.remove("flex");
+  ui.bookDetailModal.classList.add("hidden");
+  ui.bookDetailModal.classList.remove("flex");
 
   state.entities = createEntities(records);
   renderBook();
@@ -458,6 +471,12 @@ function toggleShowAllMode() {
 }
 
 function handleDemoMovement(event) {
+  if (event.key === "Escape") {
+    dismissDiscovery(true);
+    closeBookDetail();
+    return;
+  }
+
   if (!state.demoMode || !state.playerPosition) {
     return;
   }
@@ -947,7 +966,7 @@ function renderBook() {
       }
 
       return `
-        <article class="book-card">
+        <button class="book-card book-card--interactive" data-book-open="${escapeHtml(entity.id)}" type="button">
           <img src="${entity.image}" alt="${escapeHtml(entity.name)}" loading="lazy" />
           <div class="flex items-center gap-2">
             <span class="rarity-pill rarity-pill--${entity.rarity}">${rarityLabel(entity.rarity)}</span>
@@ -957,14 +976,50 @@ function renderBook() {
             <p class="book-card__name text-slate-800">${escapeHtml(entity.name)}</p>
             <p class="book-card__description">${escapeHtml(entity.description)}</p>
           </div>
-        </article>
+        </button>
       `;
     })
     .join("");
 }
 
+function handleBookGridClick(event) {
+  const trigger = event.target.closest("[data-book-open]");
+  if (!trigger) {
+    return;
+  }
+
+  const entity = state.entities.find((item) => item.id === trigger.dataset.bookOpen);
+  if (!entity || !state.discovered.has(entity.id)) {
+    return;
+  }
+
+  openBookDetail(entity);
+}
+
+function openBookDetail(entity) {
+  state.currentBookDetailId = entity.id;
+  ui.bookDetailName.textContent = entity.name;
+  ui.bookDetailImage.src = entity.image;
+  ui.bookDetailImage.alt = `${entity.name} groot in het Sammeltjesboek`;
+  ui.bookDetailRarity.textContent = rarityLabel(entity.rarity);
+  ui.bookDetailRarity.className = `rarity-pill rarity-pill--${entity.rarity}`;
+  ui.bookDetailType.textContent = typeLabel(entity.type);
+  ui.bookDetailDescription.textContent = entity.description;
+  ui.bookDetailModal.classList.remove("hidden");
+  ui.bookDetailModal.classList.add("flex");
+}
+
+function closeBookDetail() {
+  state.currentBookDetailId = null;
+  ui.bookDetailModal.classList.add("hidden");
+  ui.bookDetailModal.classList.remove("flex");
+}
+
 function switchView(view) {
   state.currentView = view;
+  if (view !== "book") {
+    closeBookDetail();
+  }
 
   ui.navButtons.forEach((button) => {
     button.classList.toggle("is-active", button.dataset.view === view);

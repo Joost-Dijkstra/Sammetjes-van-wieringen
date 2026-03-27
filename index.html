@@ -25,7 +25,7 @@
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
       crossorigin=""
     />
-    <link rel="stylesheet" href="style.css?v=20260325b" />
+    <link rel="stylesheet" href="style.css?v=20260327a" />
   </head>
   <body class="fantasy-ui antialiased">
     <div id="app" class="relative min-h-screen overflow-hidden">
@@ -258,6 +258,39 @@
           <button id="collect-btn" class="soft-button soft-button--primary mt-5 w-full" type="button">
             Toevoegen aan Sammeltjesboek
           </button>
+        </div>
+      </div>
+
+      <div id="book-detail-modal" class="fixed inset-0 z-[1100] hidden items-end justify-center p-4 md:items-center">
+        <div id="book-detail-backdrop" class="absolute inset-0 bg-slate-950/55 backdrop-blur-sm"></div>
+        <div class="relative z-10 mx-auto w-full max-w-sm soft-panel soft-panel--modal">
+          <button
+            id="dismiss-book-detail-btn"
+            class="absolute right-4 top-4 text-slate-400 transition hover:text-slate-700"
+            type="button"
+            aria-label="Sluit Sammeltje detail"
+          >
+            ✕
+          </button>
+
+          <p class="text-[11px] uppercase tracking-[0.3em] text-emerald-700/80">Sammeltjesboek</p>
+          <h2 id="book-detail-name" class="title-font mt-1 text-3xl text-slate-800"></h2>
+
+          <div class="mt-4 overflow-hidden rounded-[28px] border border-white/70 bg-emerald-50/70 p-3 shadow-inner">
+            <img
+              id="book-detail-image"
+              class="book-detail-image h-64 w-full rounded-[22px] object-cover"
+              src=""
+              alt="Sammeltje illustratie groot"
+            />
+          </div>
+
+          <div class="mt-4 flex items-center gap-2">
+            <span id="book-detail-rarity" class="rarity-pill"></span>
+            <span id="book-detail-type" class="status-chip status-chip--subtle"></span>
+          </div>
+
+          <p id="book-detail-description" class="mt-4 text-sm leading-6 text-slate-600"></p>
         </div>
       </div>
 
@@ -628,7 +661,7 @@
       integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
       crossorigin=""
     ></script>
-    <script src="app.js?v=20260325b"></script>
+    <script src="app.js?v=20260327a"></script>
     <script>
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {

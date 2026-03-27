@@ -1,10 +1,10 @@
-const SHELL_CACHE = "sammeltjes-shell-v2";
-const RUNTIME_CACHE = "sammeltjes-runtime-v2";
+const SHELL_CACHE = "sammeltjes-shell-v3";
+const RUNTIME_CACHE = "sammeltjes-runtime-v3";
 const SHELL_ASSETS = [
   "./",
   "./index.html",
-  "./style.css?v=20260325b",
-  "./app.js?v=20260325b",
+  "./style.css?v=20260327a",
+  "./app.js?v=20260327a",
   "./manifest.webmanifest",
   "./assets/icons/icon-192.png",
   "./assets/icons/icon-512.png",
