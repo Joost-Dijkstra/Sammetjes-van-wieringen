@@ -76,6 +76,24 @@ body {
   filter: sepia(0.42) saturate(0.8) hue-rotate(-12deg) contrast(0.96);
 }
 
+.leaflet-pane.island-mask-pane,
+.leaflet-pane.island-coast-pane {
+  pointer-events: none;
+}
+
+.island-pergament-mask {
+  mix-blend-mode: multiply;
+}
+
+.handdrawn-coast {
+  filter: drop-shadow(0 1px 1px rgba(70, 43, 23, 0.32));
+  pointer-events: none;
+}
+
+.handdrawn-coast--wave {
+  filter: drop-shadow(0 0 2px rgba(255, 241, 201, 0.52));
+}
+
 .leaflet-control-zoom {
   margin-bottom: 112px !important;
 }

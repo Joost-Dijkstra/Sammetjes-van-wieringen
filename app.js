@@ -26,6 +26,10 @@ const CONFIG = {
 };
 const DATA_VERSION_KEY = "sammeltjes-data-version";
 const PANEL_STATE_KEY = "sammeltjes-ui-panels-v2";
+const WIERINGEN_VIEW_BOUNDS = createExpandedMapBounds(
+  SHARED_CONFIG.WIERINGEN_BOUNDS,
+  SHARED_CONFIG.GAME_MARGIN_METERS
+);
 
 const state = {
   map: null,
@@ -249,7 +253,10 @@ function updateOverlayPositions() {
 function initMap() {
   state.map = L.map("map", {
     zoomControl: false,
-    attributionControl: false
+    attributionControl: false,
+    maxBounds: WIERINGEN_VIEW_BOUNDS,
+    maxBoundsViscosity: 1,
+    zoomSnap: 0.25
   }).setView([CONFIG.DEFAULT_CENTER.lat, CONFIG.DEFAULT_CENTER.lng], 14);
 
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -259,6 +266,10 @@ function initMap() {
 
   L.control.zoom({ position: "bottomright" }).addTo(state.map);
   L.control.attribution({ position: "topright", prefix: false }).addTo(state.map);
+  mountIslandFrame();
+  state.map.fitBounds(WIERINGEN_VIEW_BOUNDS, { padding: [8, 8], animate: false });
+  updateMapZoomLimit();
+  state.map.on("resize", updateMapZoomLimit);
 
   const playerIcon = L.divIcon({
     className: "",
@@ -295,11 +306,100 @@ function initMap() {
       return;
     }
 
+    if (!pointInPolygon(event.latlng, CONFIG.WIERINGEN_POLYGON)) {
+      showToast("De Sammeltjes wonen binnen de getekende kustlijn van Wieringen.");
+      return;
+    }
+
     setPlayerPosition(event.latlng, { source: "demo" });
     if (state.demoMode) {
       showToast("Demo-modus: je speler is naar deze plek verplaatst.");
     }
   });
+}
+
+function mountIslandFrame() {
+  const maskPane = state.map.createPane("islandMaskPane");
+  maskPane.style.zIndex = "330";
+  maskPane.style.pointerEvents = "none";
+
+  const coastPane = state.map.createPane("islandCoastPane");
+  coastPane.style.zIndex = "360";
+  coastPane.style.pointerEvents = "none";
+
+  const maskBounds = createExpandedMapBounds(SHARED_CONFIG.WIERINGEN_BOUNDS, 25000);
+  const outerRing = [
+    maskBounds.getSouthWest(),
+    maskBounds.getNorthWest(),
+    maskBounds.getNorthEast(),
+    maskBounds.getSouthEast()
+  ];
+  const islandRing = CONFIG.WIERINGEN_POLYGON.map((point) => [point.lat, point.lng]);
+  L.polygon([outerRing, islandRing], {
+    pane: "islandMaskPane",
+    stroke: false,
+    fill: true,
+    fillColor: "#6f4b2d",
+    fillOpacity: 0.34,
+    fillRule: "evenodd",
+    className: "island-pergament-mask",
+    interactive: false
+  }).addTo(state.map);
+
+  const coastline = closePolygonRing(CONFIG.WIERINGEN_POLYGON);
+  const firstWave = closePolygonRing(offsetPolygonOutward(CONFIG.WIERINGEN_POLYGON, 38));
+  const secondWave = closePolygonRing(offsetPolygonOutward(CONFIG.WIERINGEN_POLYGON, 72));
+  const coastLayers = [
+    L.polyline(coastline, {
+      pane: "islandCoastPane",
+      color: "#f5dfaa",
+      weight: 11,
+      opacity: 0.78,
+      lineCap: "round",
+      lineJoin: "round",
+      className: "handdrawn-coast handdrawn-coast--sand",
+      interactive: false
+    }),
+    L.polyline(coastline, {
+      pane: "islandCoastPane",
+      color: "#6b4527",
+      weight: 2.4,
+      opacity: 0.9,
+      lineCap: "round",
+      lineJoin: "round",
+      className: "handdrawn-coast handdrawn-coast--ink",
+      interactive: false
+    }),
+    L.polyline(firstWave, {
+      pane: "islandCoastPane",
+      color: "#fff1c8",
+      weight: 2.8,
+      opacity: 0.82,
+      dashArray: "2 9",
+      lineCap: "round",
+      className: "handdrawn-coast handdrawn-coast--wave",
+      interactive: false
+    }),
+    L.polyline(secondWave, {
+      pane: "islandCoastPane",
+      color: "#ead09a",
+      weight: 1.6,
+      opacity: 0.64,
+      dashArray: "1 13",
+      lineCap: "round",
+      className: "handdrawn-coast handdrawn-coast--wave",
+      interactive: false
+    })
+  ];
+  coastLayers.forEach((layer) => layer.addTo(state.map));
+}
+
+function updateMapZoomLimit() {
+  const minimumZoom = Math.max(10, state.map.getBoundsZoom(WIERINGEN_VIEW_BOUNDS, false));
+  state.map.setMinZoom(minimumZoom);
+  if (state.map.getZoom() < minimumZoom) {
+    state.map.setZoom(minimumZoom, { animate: false });
+  }
 }
 
 async function loadSammeltjesData() {
@@ -442,6 +542,11 @@ function setPlayerPosition(latlng, options = {}) {
 function centerMapOnPlayer() {
   if (!state.playerPosition) {
     showToast("Je locatie is nog niet beschikbaar.");
+    return;
+  }
+
+  if (!pointInPolygon(state.playerPosition, CONFIG.WIERINGEN_POLYGON)) {
+    showToast("Je bent nu buiten het speelgebied van Wieringen.");
     return;
   }
 
@@ -1493,6 +1598,44 @@ function randomBetween(min, max) {
   return min + Math.random() * (max - min);
 }
 
+function createExpandedMapBounds(bounds, marginMeters) {
+  const centerLat = (bounds.south + bounds.north) / 2;
+  const marginLat = marginMeters / 111320;
+  const marginLng = marginMeters / (111320 * Math.cos(toRadians(centerLat)));
+  return L.latLngBounds(
+    [bounds.south - marginLat, bounds.west - marginLng],
+    [bounds.north + marginLat, bounds.east + marginLng]
+  );
+}
+
+function closePolygonRing(points) {
+  const pathPoints = points.map((point) => [point.lat, point.lng]);
+  const [firstLat, firstLng] = pathPoints[0];
+  const [lastLat, lastLng] = pathPoints.at(-1);
+  if (firstLat !== lastLat || firstLng !== lastLng) {
+    pathPoints.push([firstLat, firstLng]);
+  }
+  return pathPoints;
+}
+
+function offsetPolygonOutward(points, offsetMeters) {
+  const firstPoint = points[0];
+  const lastPoint = points.at(-1);
+  const isClosed = firstPoint?.lat === lastPoint?.lat && firstPoint?.lng === lastPoint?.lng;
+  const uniquePoints = (isClosed ? points.slice(0, -1) : points).filter(Boolean);
+  const center = uniquePoints.reduce(
+    (result, point) => ({ lat: result.lat + point.lat, lng: result.lng + point.lng }),
+    { lat: 0, lng: 0 }
+  );
+  center.lat /= uniquePoints.length;
+  center.lng /= uniquePoints.length;
+
+  return points.map((point) => {
+    const distance = distanceMeters(center, point);
+    return destinationPoint(center, distance + offsetMeters, bearingDegrees(center, point));
+  });
+}
+
 function distanceMeters(from, to) {
   const earthRadius = 6371000;
   const lat1 = toRadians(from.lat);
@@ -1701,6 +1844,16 @@ function installTestApi() {
     getMapCenter() {
       const center = state.map.getCenter();
       return { lat: center.lat, lng: center.lng, zoom: state.map.getZoom() };
+    },
+    getMapLimits() {
+      const bounds = L.latLngBounds(state.map.options.maxBounds);
+      return {
+        minZoom: state.map.getMinZoom(),
+        south: bounds.getSouth(),
+        west: bounds.getWest(),
+        north: bounds.getNorth(),
+        east: bounds.getEast()
+      };
     },
     async refreshData() {
       await refreshSammeltjesData({ silent: true });

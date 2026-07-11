@@ -264,7 +264,6 @@ test("Test 6 - Mobiele layout blijft vrij en bedienbaar", async ({ page }) => {
   expect(recenterBox.y + recenterBox.height).toBeLessThan(scanBox.y);
   expect(scanBox.y).toBeGreaterThan(hudBox.y + hudBox.height);
   expect(scanBox.y + scanBox.height).toBeLessThanOrEqual(navigationBox.y + 2);
-
   await page.locator('[data-view="book"]').click();
   const bookBox = await page.getByTestId("book-panel").boundingBox();
   expect(bookBox).toBeTruthy();
@@ -311,5 +310,28 @@ test("Test 8 - GPS verplaatst de kaart niet automatisch", async ({ page }) => {
   });
   const centered = await page.evaluate(() => window.__SAMMELTJES_TEST_API__.getMapCenter());
   expect(centered.zoom).toBe(16);
+  expect(errors, errors.join("\n")).toEqual([]);
+});
+
+test("Test 9 - Kaart blijft begrensd tot Wieringen", async ({ page }) => {
+  const errors = collectClientErrors(page, "island-map");
+  await prepareBrowserState(page);
+  await page.goto("/index.html?e2e=1");
+  await waitForGameApi(page);
+
+  await expect(page.locator(".island-pergament-mask")).toHaveCount(1);
+  await expect(page.locator(".handdrawn-coast")).toHaveCount(4);
+  const result = await page.evaluate(() => {
+    const api = window.__SAMMELTJES_TEST_API__;
+    const limits = api.getMapLimits();
+    api.setMapCenter(0, 0, 1);
+    return { limits, constrained: api.getMapCenter() };
+  });
+
+  expect(result.constrained.zoom).toBeGreaterThanOrEqual(result.limits.minZoom);
+  expect(result.constrained.lat).toBeGreaterThanOrEqual(result.limits.south);
+  expect(result.constrained.lat).toBeLessThanOrEqual(result.limits.north);
+  expect(result.constrained.lng).toBeGreaterThanOrEqual(result.limits.west);
+  expect(result.constrained.lng).toBeLessThanOrEqual(result.limits.east);
   expect(errors, errors.join("\n")).toEqual([]);
 });

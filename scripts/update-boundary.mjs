@@ -34,7 +34,8 @@ window.SAMMELTJES_SHARED_CONFIG = Object.freeze({
     north: ${north},
     east: ${east}
   }),
-  ADMIN_MARGIN_METERS: 2000
+  ADMIN_MARGIN_METERS: 2000,
+  GAME_MARGIN_METERS: 1800
 });
 `;
 
