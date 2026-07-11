@@ -36,6 +36,7 @@ const state = {
   playerMarker: null,
   radarCircle: null,
   activationCircle: null,
+  coastLayers: [],
   terrain: {
     ready: false,
     isLoading: false,
@@ -270,6 +271,7 @@ function initMap() {
   state.map.fitBounds(WIERINGEN_VIEW_BOUNDS, { padding: [8, 8], animate: false });
   updateMapZoomLimit();
   state.map.on("resize", updateMapZoomLimit);
+  state.map.on("zoomend", updateCoastlineStyle);
 
   const playerIcon = L.divIcon({
     className: "",
@@ -340,7 +342,7 @@ function mountIslandFrame() {
     stroke: false,
     fill: true,
     fillColor: "#6f4b2d",
-    fillOpacity: 0.34,
+    fillOpacity: 0.27,
     fillRule: "evenodd",
     className: "island-pergament-mask",
     interactive: false
@@ -353,8 +355,8 @@ function mountIslandFrame() {
     L.polyline(coastline, {
       pane: "islandCoastPane",
       color: "#f5dfaa",
-      weight: 11,
-      opacity: 0.78,
+      weight: 3,
+      opacity: 0.2,
       lineCap: "round",
       lineJoin: "round",
       className: "handdrawn-coast handdrawn-coast--sand",
@@ -363,8 +365,8 @@ function mountIslandFrame() {
     L.polyline(coastline, {
       pane: "islandCoastPane",
       color: "#6b4527",
-      weight: 2.4,
-      opacity: 0.9,
+      weight: 1,
+      opacity: 0.3,
       lineCap: "round",
       lineJoin: "round",
       className: "handdrawn-coast handdrawn-coast--ink",
@@ -373,8 +375,8 @@ function mountIslandFrame() {
     L.polyline(firstWave, {
       pane: "islandCoastPane",
       color: "#fff1c8",
-      weight: 2.8,
-      opacity: 0.82,
+      weight: 1.2,
+      opacity: 0.14,
       dashArray: "2 9",
       lineCap: "round",
       className: "handdrawn-coast handdrawn-coast--wave",
@@ -383,8 +385,8 @@ function mountIslandFrame() {
     L.polyline(secondWave, {
       pane: "islandCoastPane",
       color: "#ead09a",
-      weight: 1.6,
-      opacity: 0.64,
+      weight: 0.8,
+      opacity: 0.06,
       dashArray: "1 13",
       lineCap: "round",
       className: "handdrawn-coast handdrawn-coast--wave",
@@ -392,6 +394,8 @@ function mountIslandFrame() {
     })
   ];
   coastLayers.forEach((layer) => layer.addTo(state.map));
+  state.coastLayers = coastLayers;
+  updateCoastlineStyle();
 }
 
 function updateMapZoomLimit() {
@@ -400,6 +404,23 @@ function updateMapZoomLimit() {
   if (state.map.getZoom() < minimumZoom) {
     state.map.setZoom(minimumZoom, { animate: false });
   }
+  updateCoastlineStyle();
+}
+
+function updateCoastlineStyle() {
+  if (!state.map || state.coastLayers.length !== 4) {
+    return;
+  }
+
+  const zoomRange = Math.max(1, 16 - state.map.getMinZoom());
+  const detail = Math.max(0, Math.min(1, (state.map.getZoom() - state.map.getMinZoom()) / zoomRange));
+  const styles = [
+    { weight: 1.5 + detail * 2.5, opacity: 0.08 + detail * 0.22 },
+    { weight: 0.7 + detail * 0.8, opacity: 0.16 + detail * 0.3 },
+    { weight: 0.8 + detail * 0.8, opacity: 0.05 + detail * 0.18 },
+    { weight: 0.6 + detail * 0.5, opacity: detail * 0.09 }
+  ];
+  state.coastLayers.forEach((layer, index) => layer.setStyle(styles[index]));
 }
 
 async function loadSammeltjesData() {

@@ -333,5 +333,14 @@ test("Test 9 - Kaart blijft begrensd tot Wieringen", async ({ page }) => {
   expect(result.constrained.lat).toBeLessThanOrEqual(result.limits.north);
   expect(result.constrained.lng).toBeGreaterThanOrEqual(result.limits.west);
   expect(result.constrained.lng).toBeLessThanOrEqual(result.limits.east);
+  const lowZoomOpacity = Number(
+    await page.locator(".handdrawn-coast--sand").getAttribute("stroke-opacity")
+  );
+  await page.evaluate(() => window.__SAMMELTJES_TEST_API__.setMapCenter(52.9, 4.95, 16));
+  const closeZoomOpacity = Number(
+    await page.locator(".handdrawn-coast--sand").getAttribute("stroke-opacity")
+  );
+  expect(lowZoomOpacity).toBeLessThanOrEqual(0.1);
+  expect(closeZoomOpacity).toBeGreaterThan(lowZoomOpacity);
   expect(errors, errors.join("\n")).toEqual([]);
 });

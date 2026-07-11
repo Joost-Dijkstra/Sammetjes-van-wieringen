@@ -86,12 +86,12 @@ body {
 }
 
 .handdrawn-coast {
-  filter: drop-shadow(0 1px 1px rgba(70, 43, 23, 0.32));
+  filter: drop-shadow(0 1px 1px rgba(70, 43, 23, 0.14));
   pointer-events: none;
 }
 
 .handdrawn-coast--wave {
-  filter: drop-shadow(0 0 2px rgba(255, 241, 201, 0.52));
+  filter: drop-shadow(0 0 1px rgba(255, 241, 201, 0.24));
 }
 
 .leaflet-control-zoom {
