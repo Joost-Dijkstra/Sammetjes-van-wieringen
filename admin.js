@@ -1,12 +1,28 @@
 const ADMIN_PASSWORD = "sammeltjesdev";
 const ADMIN_SESSION_KEY = "sammeltjes-admin-auth";
 const DATA_VERSION_KEY = "sammeltjes-data-version";
+const SHARED_CONFIG = window.SAMMELTJES_SHARED_CONFIG;
+
+if (!SHARED_CONFIG) {
+  throw new Error("shared-config.js ontbreekt of is niet geladen.");
+}
+
 const DEFAULT_CENTER = { lat: 52.9005, lng: 4.9485 };
 const DEFAULT_ZOOM = 14;
 const DEFAULT_RADAR_RADIUS = 60;
+const boundsCenterLat = (SHARED_CONFIG.WIERINGEN_BOUNDS.south + SHARED_CONFIG.WIERINGEN_BOUNDS.north) / 2;
+const boundsMarginLat = SHARED_CONFIG.ADMIN_MARGIN_METERS / 111320;
+const boundsMarginLng =
+  SHARED_CONFIG.ADMIN_MARGIN_METERS / (111320 * Math.cos((boundsCenterLat * Math.PI) / 180));
 const WIERINGEN_VIEW_BOUNDS = L.latLngBounds(
-  [52.8715, 4.8725],
-  [52.9365, 5.025]
+  [
+    SHARED_CONFIG.WIERINGEN_BOUNDS.south - boundsMarginLat,
+    SHARED_CONFIG.WIERINGEN_BOUNDS.west - boundsMarginLng
+  ],
+  [
+    SHARED_CONFIG.WIERINGEN_BOUNDS.north + boundsMarginLat,
+    SHARED_CONFIG.WIERINGEN_BOUNDS.east + boundsMarginLng
+  ]
 );
 
 const state = {
@@ -29,6 +45,14 @@ document.addEventListener("DOMContentLoaded", init);
 
 function init() {
   cacheDom();
+  if (!isLocalDevHost()) {
+    ui.adminAccessNote.textContent =
+      "Deze beheerpagina is bewust uitgeschakeld op de openbare website. Start dev-server.py op je computer om wijzigingen veilig op te slaan.";
+    ui.passwordInput.disabled = true;
+    ui.loginSubmit.disabled = true;
+    ui.loginSubmit.textContent = "Alleen lokaal beschikbaar";
+    return;
+  }
   bindLogin();
 
   if (sessionStorage.getItem(ADMIN_SESSION_KEY) === "ok") {
@@ -42,6 +66,8 @@ function cacheDom() {
   ui.loginForm = document.getElementById("login-form");
   ui.passwordInput = document.getElementById("password-input");
   ui.loginError = document.getElementById("login-error");
+  ui.adminAccessNote = document.getElementById("admin-access-note");
+  ui.loginSubmit = document.getElementById("login-submit");
   ui.itemCount = document.getElementById("item-count");
   ui.loadStatus = document.getElementById("load-status");
   ui.protocolWarning = document.getElementById("protocol-warning");
@@ -57,6 +83,9 @@ function cacheDom() {
   ui.sortNearestButton = document.getElementById("sort-nearest-btn");
   ui.editorForm = document.getElementById("editor-form");
   ui.itemList = document.getElementById("item-list");
+  ui.itemSelector = document.getElementById("item-selector");
+  ui.itemSearch = document.getElementById("item-search");
+  ui.collapseButtons = Array.from(document.querySelectorAll("[data-admin-collapse]"));
   ui.imagePreview = document.getElementById("image-preview");
   ui.fields = {
     id: document.getElementById("field-id"),
@@ -69,6 +98,7 @@ function cacheDom() {
     rarity: document.getElementById("field-rarity"),
     description: document.getElementById("field-description"),
     image: document.getElementById("field-image"),
+    thumbnail: document.getElementById("field-thumbnail"),
     behavior: document.getElementById("field-behavior"),
     speedKmh: document.getElementById("field-speed-kmh"),
     availabilityMode: document.getElementById("field-availability-mode"),
@@ -104,6 +134,9 @@ async function unlockAdmin() {
     initMap();
     bindAdminUi();
     await loadDataFromFile();
+    if (isE2eMode()) {
+      installAdminTestApi();
+    }
   }
 }
 
@@ -116,6 +149,9 @@ function bindAdminUi() {
   ui.deleteButton.addEventListener("click", deleteSelectedItem);
   ui.clearPlayerButton.addEventListener("click", clearPlayerMarker);
   ui.sortNearestButton.addEventListener("click", sortListByMapCenter);
+  ui.itemSelector.addEventListener("change", () => selectItem(ui.itemSelector.value, { focus: true }));
+  ui.itemSearch.addEventListener("input", renderItemList);
+  ui.collapseButtons.forEach((button) => button.addEventListener("click", () => toggleAdminSection(button)));
   ui.editorForm.addEventListener("input", handleFormInput);
   ui.editorForm.addEventListener("change", handleFormInput);
   ui.fields.relocate.addEventListener("change", handleRelocateToggle);
@@ -139,6 +175,15 @@ function initMap() {
   });
   state.map.setMinZoom(state.map.getBoundsZoom(WIERINGEN_VIEW_BOUNDS) - 0.25);
   state.map.setMaxZoom(18);
+
+  L.polygon(SHARED_CONFIG.WIERINGEN_POLYGON, {
+    color: "#0891b2",
+    weight: 2,
+    opacity: 0.8,
+    fillColor: "#67e8f9",
+    fillOpacity: 0.025,
+    interactive: false
+  }).addTo(state.map);
 
   state.map.on("click", (event) => {
     if (state.draggingMarker) {
@@ -170,15 +215,8 @@ async function loadDataFromFile() {
     setItems(data);
     setLoadStatus("Live JSON geladen", "success");
   } catch (error) {
-    const fallbackNode = document.getElementById("admin-data-fallback");
-    if (!fallbackNode) {
-      setLoadStatus("Kon geen data laden", "error");
-      throw error;
-    }
-
-    const fallbackData = JSON.parse(fallbackNode.textContent.trim());
-    setItems(fallbackData);
-    setLoadStatus("Fallbackdata geladen. Save downloadt de actuele JSON.", "warning");
+    setItems([]);
+    setLoadStatus("Kon data/sammeltjes.json niet laden. Start de lokale dev-server opnieuw.", "error");
   }
 }
 
@@ -189,6 +227,7 @@ function setItems(items) {
   state.items.forEach((item) => mountItemLayers(item));
 
   updateItemCount();
+  renderItemSelector();
   renderItemList();
 
   if (state.items.length > 0) {
@@ -208,6 +247,7 @@ function normalizeItem(item, index) {
     rarity: oneOf(item.rarity, ["common", "rare", "legendary"], "common"),
     description: String(item.description || ""),
     image: String(item.image || ""),
+    thumbnail: String(item.thumbnail || item.image || ""),
     behavior: oneOf(item.behavior, ["curious", "scared", "shy"], defaultBehaviorForType(item.type)),
     speedKmh: normalizeSpeedKmh(item.speedKmh, item.rarity),
     availabilityMode: oneOf(
@@ -252,11 +292,13 @@ function mountItemLayers(item) {
     state.draggingMarker = false;
     state.map.dragging.enable();
     state.map.doubleClickZoom.enable();
+    updateLayerStyles(item);
     selectItem(item.id, { focus: false });
   });
 
   state.markers.set(item.id, marker);
   state.circles.set(item.id, circle);
+  decorateAdminMarkerForTests(item);
 }
 
 function createMarkerIcon(item, selected) {
@@ -288,6 +330,7 @@ function updateLayerStyles(item) {
     opacity: item.active ? 0.8 : 0.38,
     fillOpacity: item.active ? 0.08 : 0.03
   });
+  decorateAdminMarkerForTests(item);
 }
 
 function selectItem(id, options = {}) {
@@ -302,6 +345,7 @@ function selectItem(id, options = {}) {
 
   state.items.forEach((entry) => updateLayerStyles(entry));
   fillEditor(item);
+  ui.itemSelector.value = item.id;
   renderItemList();
   updateMapModeLabel();
 
@@ -321,13 +365,14 @@ function fillEditor(item) {
   ui.fields.rarity.value = item.rarity;
   ui.fields.description.value = item.description;
   ui.fields.image.value = item.image;
+  ui.fields.thumbnail.value = item.thumbnail;
   ui.fields.behavior.value = item.behavior;
   ui.fields.speedKmh.value = item.speedKmh.toFixed(1);
   ui.fields.availabilityMode.value = item.availabilityMode;
   ui.fields.randomHoursPerDay.value = String(item.randomHoursPerDay);
   ui.fields.active.checked = item.active;
   ui.fields.relocate.checked = state.relocateMode;
-  ui.imagePreview.src = item.image || "";
+  ui.imagePreview.src = item.thumbnail || item.image || "";
   ui.imagePreview.alt = item.name || "Preview";
   updateAvailabilityFieldState();
   syncRelocateUi();
@@ -347,8 +392,16 @@ function handleFormInput(event) {
   const nextId = slugify(ui.fields.id.value || item.id || item.name);
 
   if (previousId !== nextId) {
+    if (state.items.some((entry) => entry !== item && entry.id === nextId)) {
+      ui.fields.id.value = previousId;
+      setLoadStatus(`ID '${nextId}' bestaat al. Kies een uniek ID.`, "error");
+      return;
+    }
     remapItemLayerKeys(previousId, nextId);
     state.selectedId = nextId;
+    if (state.pendingRelocateId === previousId) {
+      state.pendingRelocateId = nextId;
+    }
   }
 
   item.id = nextId;
@@ -361,6 +414,7 @@ function handleFormInput(event) {
   item.rarity = ui.fields.rarity.value;
   item.description = ui.fields.description.value.trim();
   item.image = ui.fields.image.value.trim();
+  item.thumbnail = ui.fields.thumbnail.value.trim() || item.image;
   item.behavior = ui.fields.behavior.value;
   item.speedKmh = normalizeSpeedKmh(ui.fields.speedKmh.value, item.rarity);
   item.availabilityMode = ui.fields.availabilityMode.value;
@@ -368,7 +422,9 @@ function handleFormInput(event) {
   item.active = ui.fields.active.checked;
 
   updateLayerStyles(item);
-  fillEditor(item);
+  ui.imagePreview.src = item.thumbnail || item.image || "";
+  ui.imagePreview.alt = item.name || "Preview";
+  renderItemSelector();
   renderItemList();
   updateAvailabilityFieldState();
   updateMapModeLabel();
@@ -377,6 +433,12 @@ function handleFormInput(event) {
 function updateItemPosition(id, latlng) {
   const item = state.items.find((entry) => entry.id === id);
   if (!item) {
+    return;
+  }
+
+  if (!pointInPolygon(latlng, SHARED_CONFIG.WIERINGEN_POLYGON)) {
+    setLoadStatus("Kies een plek binnen de blauwe grens van Wieringen.", "error");
+    updateLayerStyles(item);
     return;
   }
 
@@ -393,7 +455,14 @@ function updateItemPosition(id, latlng) {
 }
 
 function createNewItemAt(latlng) {
-  const nextIndex = state.items.length + 1;
+  if (!pointInPolygon(latlng, SHARED_CONFIG.WIERINGEN_POLYGON)) {
+    setLoadStatus("Nieuwe Sammeltjes kunnen alleen binnen Wieringen worden geplaatst.", "error");
+    return;
+  }
+  let nextIndex = state.items.length + 1;
+  while (state.items.some((item) => item.id === `nieuw-sammeltje-${nextIndex}`)) {
+    nextIndex += 1;
+  }
   const nextItem = normalizeItem(
     {
       id: `nieuw-sammeltje-${nextIndex}`,
@@ -418,6 +487,7 @@ function createNewItemAt(latlng) {
   state.items.push(nextItem);
   mountItemLayers(nextItem);
   updateItemCount();
+  renderItemSelector();
   renderItemList();
   state.relocateMode = false;
   state.pendingRelocateId = null;
@@ -441,6 +511,7 @@ function deleteSelectedItem() {
   state.items.splice(index, 1);
 
   updateItemCount();
+  renderItemSelector();
   renderItemList();
 
   if (state.items.length > 0) {
@@ -457,12 +528,15 @@ function deleteSelectedItem() {
 }
 
 function renderItemList() {
-  const items = [...state.items];
+  const query = (ui.itemSearch?.value || "").trim().toLowerCase();
+  const items = state.items.filter((item) =>
+    `${item.name} ${item.id} ${item.type} ${item.biome}`.toLowerCase().includes(query)
+  );
   ui.itemList.innerHTML = items
     .map((item) => {
       const selectedClass = item.id === state.selectedId ? " is-selected" : "";
       return `
-        <button class="item-row${selectedClass}" type="button" data-item-id="${escapeHtml(item.id)}">
+        <button class="item-row${selectedClass}" type="button" data-item-id="${escapeHtml(item.id)}" data-testid="admin-item-row-${escapeHtml(item.id)}">
           <span class="item-row__dot" style="background:${getRarityColor(item.rarity)}"></span>
           <span>
             <strong class="block text-left text-slate-900">${escapeHtml(item.name)}</strong>
@@ -477,6 +551,31 @@ function renderItemList() {
   ui.itemList.querySelectorAll("[data-item-id]").forEach((button) => {
     button.addEventListener("click", () => selectItem(button.dataset.itemId, { focus: true }));
   });
+}
+
+function renderItemSelector() {
+  const previousValue = state.selectedId;
+  ui.itemSelector.innerHTML = state.items
+    .map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)} (${escapeHtml(item.type)})</option>`)
+    .join("");
+  if (previousValue && state.items.some((item) => item.id === previousValue)) {
+    ui.itemSelector.value = previousValue;
+  }
+}
+
+function toggleAdminSection(button) {
+  const body = document.getElementById(button.dataset.adminCollapse);
+  if (!body) {
+    return;
+  }
+  const collapsed = !body.hidden;
+  body.hidden = collapsed;
+  body.closest(".admin-collapsible")?.classList.toggle("is-collapsed", collapsed);
+  button.setAttribute("aria-expanded", String(!collapsed));
+  button.textContent = collapsed ? "Openen" : "Inklappen";
+  if (!collapsed) {
+    window.setTimeout(() => state.map.invalidateSize(), 0);
+  }
 }
 
 function updateItemCount() {
@@ -556,6 +655,11 @@ function relocateSelectedItem(latlng) {
     return;
   }
 
+  if (!pointInPolygon(latlng, SHARED_CONFIG.WIERINGEN_POLYGON)) {
+    setLoadStatus("Verplaatsen kan alleen binnen de blauwe grens van Wieringen.", "error");
+    return;
+  }
+
   item.lat = roundCoord(latlng.lat);
   item.lng = roundCoord(latlng.lng);
   state.relocateMode = false;
@@ -578,6 +682,11 @@ async function importJsonFile(event) {
 
 async function downloadJson() {
   const exportItems = buildExportItems();
+  const validationErrors = validateItems(exportItems);
+  if (validationErrors.length > 0) {
+    setLoadStatus(`Niet opgeslagen: ${validationErrors[0]}`, "error");
+    return false;
+  }
 
   try {
     const response = await fetch("/api/save-sammeltjes", {
@@ -595,11 +704,39 @@ async function downloadJson() {
     const payload = await response.json();
     localStorage.setItem(DATA_VERSION_KEY, String(Date.now()));
     setLoadStatus(`Live JSON opgeslagen${payload.path ? `: ${payload.path}` : ""}`, "success");
-    return;
+    return true;
   } catch (error) {
     triggerJsonDownload(exportItems);
     setLoadStatus("Direct opslaan niet beschikbaar. JSON is als download opgeslagen.", "warning");
+    return false;
   }
+}
+
+function validateItems(items) {
+  const errors = [];
+  const ids = new Set();
+  for (const item of items) {
+    if (!item.id || !item.name) {
+      errors.push("ieder Sammeltje heeft een ID en naam nodig.");
+      continue;
+    }
+    if (ids.has(item.id)) {
+      errors.push(`ID '${item.id}' komt meer dan een keer voor.`);
+    }
+    ids.add(item.id);
+    if (!Number.isFinite(item.lat) || !Number.isFinite(item.lng)) {
+      errors.push(`${item.name} heeft geen geldige locatie.`);
+    } else if (!pointInPolygon(item, SHARED_CONFIG.WIERINGEN_POLYGON)) {
+      errors.push(`${item.name} staat buiten Wieringen.`);
+    }
+    if (item.radius < 50 || item.radius > 500) {
+      errors.push(`${item.name} heeft een radius buiten 50-500 meter.`);
+    }
+    if (!item.image || !item.thumbnail) {
+      errors.push(`${item.name} mist een afbeeldingspad.`);
+    }
+  }
+  return errors;
 }
 
 function buildExportItems() {
@@ -614,6 +751,7 @@ function buildExportItems() {
     rarity: item.rarity,
     description: item.description,
     image: item.image,
+    thumbnail: item.thumbnail,
     behavior: item.behavior,
     speedKmh: normalizeSpeedKmh(item.speedKmh, item.rarity),
     availabilityMode: item.availabilityMode,
@@ -639,12 +777,21 @@ function triggerJsonDownload(exportItems) {
 function sortListByMapCenter() {
   const center = state.map.getCenter();
   state.items.sort((left, right) => distanceMeters(center, left) - distanceMeters(center, right));
+  renderItemSelector();
   renderItemList();
 }
 
 function logoutAdmin() {
   sessionStorage.removeItem(ADMIN_SESSION_KEY);
   window.location.reload();
+}
+
+function isLocalDevHost() {
+  return ["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
+}
+
+function isE2eMode() {
+  return new URLSearchParams(window.location.search).get("e2e") === "1";
 }
 
 function updateAvailabilityFieldState() {
@@ -701,6 +848,16 @@ function clearAllMarkerLayers() {
   state.circles.forEach((circle) => circle.remove());
   state.markers.clear();
   state.circles.clear();
+}
+
+function decorateAdminMarkerForTests(item) {
+  const markerElement = state.markers.get(item.id)?._icon;
+  if (!markerElement) {
+    return;
+  }
+
+  markerElement.setAttribute("data-testid", `admin-marker-${item.id}`);
+  markerElement.setAttribute("data-item-id", item.id);
 }
 
 function remapItemLayerKeys(previousId, nextId) {
@@ -806,6 +963,104 @@ function escapeHtml(value) {
     .replaceAll("'", "&#39;");
 }
 
+function installAdminTestApi() {
+  window.__SAMMELTJES_ADMIN_TEST_API__ = {
+    login() {
+      sessionStorage.setItem(ADMIN_SESSION_KEY, "ok");
+      return true;
+    },
+    async reloadData() {
+      await loadDataFromFile();
+      return this.getStateSnapshot();
+    },
+    selectItem(id) {
+      selectItem(id, { focus: false });
+      return this.getSelectedItem();
+    },
+    updateSelectedItem(patch) {
+      const item = getSelectedItem();
+      if (!item) {
+        return null;
+      }
+
+      const next = { ...item, ...patch };
+      if (patch.id !== undefined) {
+        ui.fields.id.value = String(patch.id);
+      }
+      if (patch.name !== undefined) {
+        ui.fields.name.value = String(patch.name);
+      }
+      if (patch.type !== undefined) {
+        ui.fields.type.value = String(patch.type);
+      }
+      if (patch.biome !== undefined) {
+        ui.fields.biome.value = String(patch.biome);
+      }
+      if (patch.lat !== undefined) {
+        ui.fields.lat.value = String(patch.lat);
+      }
+      if (patch.lng !== undefined) {
+        ui.fields.lng.value = String(patch.lng);
+      }
+      if (patch.radius !== undefined) {
+        ui.fields.radius.value = String(patch.radius);
+      }
+      if (patch.rarity !== undefined) {
+        ui.fields.rarity.value = String(patch.rarity);
+      }
+      if (patch.description !== undefined) {
+        ui.fields.description.value = String(patch.description);
+      }
+      if (patch.image !== undefined) {
+        ui.fields.image.value = String(patch.image);
+      }
+      if (patch.thumbnail !== undefined) {
+        ui.fields.thumbnail.value = String(patch.thumbnail);
+      }
+      if (patch.behavior !== undefined) {
+        ui.fields.behavior.value = String(patch.behavior);
+      }
+      if (patch.speedKmh !== undefined) {
+        ui.fields.speedKmh.value = String(patch.speedKmh);
+      }
+      if (patch.availabilityMode !== undefined) {
+        ui.fields.availabilityMode.value = String(patch.availabilityMode);
+      }
+      if (patch.randomHoursPerDay !== undefined) {
+        ui.fields.randomHoursPerDay.value = String(patch.randomHoursPerDay);
+      }
+      if (patch.active !== undefined) {
+        ui.fields.active.checked = Boolean(patch.active);
+      }
+
+      handleFormInput();
+      return this.getSelectedItem();
+    },
+    async save() {
+      await downloadJson();
+      return {
+        loadStatus: ui.loadStatus.textContent.trim()
+      };
+    },
+    getSelectedItem() {
+      const item = getSelectedItem();
+      return item ? JSON.parse(JSON.stringify(item)) : null;
+    },
+    getStateSnapshot() {
+      return {
+        selectedId: state.selectedId,
+        itemCount: state.items.length,
+        loadStatus: ui.loadStatus.textContent.trim(),
+        mapModeLabel: ui.mapModeLabel.textContent.trim()
+      };
+    },
+    getMapContainerPoint(lat, lng) {
+      const point = state.map.latLngToContainerPoint([lat, lng]);
+      return { x: point.x, y: point.y };
+    }
+  };
+}
+
 function distanceMeters(from, to) {
   const earthRadius = 6371000;
   const lat1 = toRadians(from.lat);
@@ -822,4 +1077,23 @@ function distanceMeters(from, to) {
 
 function toRadians(value) {
   return (value * Math.PI) / 180;
+}
+
+function pointInPolygon(point, polygon) {
+  let inside = false;
+  for (let index = 0, previous = polygon.length - 1; index < polygon.length; previous = index, index += 1) {
+    const currentPoint = polygon[index];
+    const previousPoint = polygon[previous];
+    const intersects =
+      currentPoint.lng > point.lng !== previousPoint.lng > point.lng &&
+      point.lat <
+        ((previousPoint.lat - currentPoint.lat) * (point.lng - currentPoint.lng)) /
+          (previousPoint.lng - currentPoint.lng) +
+          currentPoint.lat;
+
+    if (intersects) {
+      inside = !inside;
+    }
+  }
+  return inside;
 }

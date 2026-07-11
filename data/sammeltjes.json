@@ -9,12 +9,13 @@
     "radius": 80,
     "rarity": "common",
     "description": "Een pluizig luchtvriendje dat graag boven de haven bij Den Oever dobbert.",
-    "image": "assets/sammeltjes/wieringer-wolkje.png",
+    "image": "assets/sammeltjes-webp/full/wieringer-wolkje.webp",
     "behavior": "shy",
     "speedKmh": 0,
     "availabilityMode": "all-day",
     "randomHoursPerDay": 6,
-    "active": true
+    "active": true,
+    "thumbnail": "assets/sammeltjes-webp/thumbs/wieringer-wolkje.webp"
   },
   {
     "id": "dijkdraakje",
@@ -26,12 +27,13 @@
     "radius": 120,
     "rarity": "rare",
     "description": "Dit mini-draakje warmt zijn pootjes op de stenen van de oude dijk.",
-    "image": "assets/sammeltjes/dijkdraakje.png",
+    "image": "assets/sammeltjes-webp/full/dijkdraakje.webp",
     "behavior": "shy",
     "speedKmh": 0.6,
     "availabilityMode": "all-day",
     "randomHoursPerDay": 6,
-    "active": true
+    "active": true,
+    "thumbnail": "assets/sammeltjes-webp/thumbs/dijkdraakje.webp"
   },
   {
     "id": "kwelder-sprietje",
@@ -43,12 +45,13 @@
     "radius": 60,
     "rarity": "common",
     "description": "Een dansend graswezentje dat zachtjes ritselt als de zeewind langs trekt.",
-    "image": "assets/sammeltjes/kwelder-sprietje.png",
+    "image": "assets/sammeltjes-webp/full/kwelder-sprietje.webp",
     "behavior": "shy",
     "speedKmh": 0,
     "availabilityMode": "all-day",
     "randomHoursPerDay": 6,
-    "active": true
+    "active": true,
+    "thumbnail": "assets/sammeltjes-webp/thumbs/kwelder-sprietje.webp"
   },
   {
     "id": "kapel-kabbeltje",
@@ -60,12 +63,13 @@
     "radius": 80,
     "rarity": "legendary",
     "description": "Een gouden fluistergeest die alleen verschijnt bij stille plekjes met oud verhaal.",
-    "image": "assets/sammeltjes/kapel-kabbeltje.png",
+    "image": "assets/sammeltjes-webp/full/kapel-kabbeltje.webp",
     "behavior": "shy",
     "speedKmh": 0,
     "availabilityMode": "evening",
     "randomHoursPerDay": 6,
-    "active": true
+    "active": true,
+    "thumbnail": "assets/sammeltjes-webp/thumbs/kapel-kabbeltje.webp"
   },
   {
     "id": "rietritter",
@@ -77,12 +81,13 @@
     "radius": 290,
     "rarity": "common",
     "description": "Een dapper schildknaapje dat tussen de rietkragen op patrouille loopt.",
-    "image": "assets/sammeltjes/rietritter.png",
+    "image": "assets/sammeltjes-webp/full/rietritter.webp",
     "behavior": "curious",
     "speedKmh": 2.8,
     "availabilityMode": "all-day",
     "randomHoursPerDay": 6,
-    "active": true
+    "active": true,
+    "thumbnail": "assets/sammeltjes-webp/thumbs/rietritter.webp"
   },
   {
     "id": "mistmuis",
@@ -94,12 +99,13 @@
     "radius": 110,
     "rarity": "rare",
     "description": "Een nieuwsgierige muis die in zachte bochten door de ochtendmist sluipt.",
-    "image": "assets/sammeltjes/mistmuis.png",
+    "image": "assets/sammeltjes-webp/full/mistmuis.webp",
     "behavior": "scared",
     "speedKmh": 2.4,
     "availabilityMode": "night",
     "randomHoursPerDay": 6,
-    "active": true
+    "active": true,
+    "thumbnail": "assets/sammeltjes-webp/thumbs/mistmuis.webp"
   },
   {
     "id": "akkervonk",
@@ -111,12 +117,13 @@
     "radius": 130,
     "rarity": "common",
     "description": "Een knetterend lichtje dat graag langs akkers huppelt als de zon laag staat.",
-    "image": "assets/sammeltjes/akkervonk.png",
+    "image": "assets/sammeltjes-webp/full/akkervonk.webp",
     "behavior": "curious",
     "speedKmh": 3.4,
     "availabilityMode": "evening",
     "randomHoursPerDay": 6,
-    "active": true
+    "active": true,
+    "thumbnail": "assets/sammeltjes-webp/thumbs/akkervonk.webp"
   },
   {
     "id": "schelpenwachter",
@@ -128,12 +135,13 @@
     "radius": 270,
     "rarity": "rare",
     "description": "Een rustige strandwachter die schelpen telt en altijd een stap vooruit denkt.",
-    "image": "assets/sammeltjes/schelpenwachter.png",
+    "image": "assets/sammeltjes-webp/full/schelpenwachter.webp",
     "behavior": "shy",
     "speedKmh": 1.8,
     "availabilityMode": "all-day",
     "randomHoursPerDay": 6,
-    "active": true
+    "active": true,
+    "thumbnail": "assets/sammeltjes-webp/thumbs/schelpenwachter.webp"
   },
   {
     "id": "stormster",
@@ -145,12 +153,13 @@
     "radius": 420,
     "rarity": "rare",
     "description": "Een vallende ster die ergens op Wieringen neerstrijkt zodra de lucht onrustig voelt.",
-    "image": "assets/sammeltjes/stormster.png",
+    "image": "assets/sammeltjes-webp/full/stormster.webp",
     "behavior": "scared",
     "speedKmh": 4.8,
     "availabilityMode": "random-hours",
     "randomHoursPerDay": 7,
-    "active": true
+    "active": true,
+    "thumbnail": "assets/sammeltjes-webp/thumbs/stormster.webp"
   },
   {
     "id": "goudglim",
@@ -162,12 +171,13 @@
     "radius": 380,
     "rarity": "legendary",
     "description": "Deze zeldzame schitteraar laat maar heel even een gouden spoor over het eiland achter.",
-    "image": "assets/sammeltjes/goudglim.png",
+    "image": "assets/sammeltjes-webp/full/goudglim.webp",
     "behavior": "shy",
     "speedKmh": 3.2,
     "availabilityMode": "random-hours",
     "randomHoursPerDay": 4,
-    "active": true
+    "active": true,
+    "thumbnail": "assets/sammeltjes-webp/thumbs/goudglim.webp"
   },
   {
     "id": "schapenherdertje",
@@ -179,12 +189,13 @@
     "radius": 290,
     "rarity": "common",
     "description": "Een klein Sammeltje dat altijd tussen de Wieringer schapen loopt en ze zachtjes bijeen houdt.",
-    "image": "assets/sammeltjes/schapenherdertje.png",
+    "image": "assets/sammeltjes-webp/full/schapenherdertje.webp",
     "behavior": "curious",
     "speedKmh": 1.7,
     "availabilityMode": "all-day",
     "randomHoursPerDay": 6,
-    "active": true
+    "active": true,
+    "thumbnail": "assets/sammeltjes-webp/thumbs/schapenherdertje.webp"
   },
   {
     "id": "boer-bietje",
@@ -196,12 +207,13 @@
     "radius": 120,
     "rarity": "common",
     "description": "Een vrolijk veld-Sammeltje dat dol is op akkers, aardappels en bieten.",
-    "image": "assets/sammeltjes/boer-bietje.png",
+    "image": "assets/sammeltjes-webp/full/boer-bietje.webp",
     "behavior": "curious",
     "speedKmh": 2.1,
     "availabilityMode": "all-day",
     "randomHoursPerDay": 6,
-    "active": true
+    "active": true,
+    "thumbnail": "assets/sammeltjes-webp/thumbs/boer-bietje.webp"
   },
   {
     "id": "molenmaatje",
@@ -213,12 +225,13 @@
     "radius": 55,
     "rarity": "rare",
     "description": "Een windvriend Sammeltje dat bij oude molens woont en met de wieken meedraait.",
-    "image": "assets/sammeltjes/molenmaatje.png",
+    "image": "assets/sammeltjes-webp/full/molenmaatje.webp",
     "behavior": "shy",
     "speedKmh": 0,
     "availabilityMode": "all-day",
     "randomHoursPerDay": 6,
-    "active": true
+    "active": true,
+    "thumbnail": "assets/sammeltjes-webp/thumbs/molenmaatje.webp"
   },
   {
     "id": "nettenvissertje",
@@ -230,12 +243,13 @@
     "radius": 385,
     "rarity": "common",
     "description": "Een kust-Sammeltje dat kleine visnetjes verzamelt en altijd naar de zee kijkt.",
-    "image": "assets/sammeltjes/nettenvissertje.png",
+    "image": "assets/sammeltjes-webp/full/nettenvissertje.webp",
     "behavior": "shy",
     "speedKmh": 1.6,
     "availabilityMode": "evening",
     "randomHoursPerDay": 6,
-    "active": true
+    "active": true,
+    "thumbnail": "assets/sammeltjes-webp/thumbs/nettenvissertje.webp"
   },
   {
     "id": "opa-duinbaard",
@@ -247,12 +261,13 @@
     "radius": 270,
     "rarity": "rare",
     "description": "Een oud wijs Sammeltje met een lange baard van duingras en zand.",
-    "image": "assets/sammeltjes/opa-duinbaard.png",
+    "image": "assets/sammeltjes-webp/full/opa-duinbaard.webp",
     "behavior": "shy",
     "speedKmh": 0,
     "availabilityMode": "evening",
     "randomHoursPerDay": 6,
-    "active": true
+    "active": true,
+    "thumbnail": "assets/sammeltjes-webp/thumbs/opa-duinbaard.webp"
   },
   {
     "id": "oma-wierwortel",
@@ -264,12 +279,13 @@
     "radius": 169,
     "rarity": "common",
     "description": "Een vriendelijk oud Sammeltje dat kruiden en wortels verzamelt.",
-    "image": "assets/sammeltjes/oma-wierwortel.png",
+    "image": "assets/sammeltjes-webp/full/oma-wierwortel.webp",
     "behavior": "curious",
     "speedKmh": 1.7,
     "availabilityMode": "all-day",
     "randomHoursPerDay": 6,
-    "active": true
+    "active": true,
+    "thumbnail": "assets/sammeltjes-webp/thumbs/oma-wierwortel.webp"
   },
   {
     "id": "dijkwacht",
@@ -281,12 +297,13 @@
     "radius": 150,
     "rarity": "rare",
     "description": "Een klein waakzaam Sammeltje dat 's nachts over de dijken loopt.",
-    "image": "assets/sammeltjes/dijkwacht.png",
+    "image": "assets/sammeltjes-webp/full/dijkwacht.webp",
     "behavior": "scared",
     "speedKmh": 2.6,
     "availabilityMode": "night",
     "randomHoursPerDay": 6,
-    "active": true
+    "active": true,
+    "thumbnail": "assets/sammeltjes-webp/thumbs/dijkwacht.webp"
   },
   {
     "id": "havenpluimpje",
@@ -298,12 +315,13 @@
     "radius": 95,
     "rarity": "common",
     "description": "Een luchtig Sammeltje dat rond de havenpalen en scheepstouwen zweeft.",
-    "image": "assets/sammeltjes/havenpluimpje.png",
+    "image": "assets/sammeltjes-webp/full/havenpluimpje.webp",
     "behavior": "curious",
     "speedKmh": 2.3,
     "availabilityMode": "all-day",
     "randomHoursPerDay": 6,
-    "active": true
+    "active": true,
+    "thumbnail": "assets/sammeltjes-webp/thumbs/havenpluimpje.webp"
   },
   {
     "id": "mosselmop",
@@ -315,12 +333,13 @@
     "radius": 90,
     "rarity": "common",
     "description": "Een grappig Sammeltje dat altijd met schelpen en mossels speelt.",
-    "image": "assets/sammeltjes/mosselmop.png",
+    "image": "assets/sammeltjes-webp/full/mosselmop.webp",
     "behavior": "shy",
     "speedKmh": 1.9,
     "availabilityMode": "all-day",
     "randomHoursPerDay": 6,
-    "active": true
+    "active": true,
+    "thumbnail": "assets/sammeltjes-webp/thumbs/mosselmop.webp"
   },
   {
     "id": "waddenwriemel",
@@ -332,11 +351,12 @@
     "radius": 130,
     "rarity": "rare",
     "description": "Een nieuwsgierig Sammeltje dat door het wad kruipt en glinsteringen zoekt.",
-    "image": "assets/sammeltjes/waddenwriemel.png",
+    "image": "assets/sammeltjes-webp/full/waddenwriemel.webp",
     "behavior": "curious",
     "speedKmh": 2.8,
     "availabilityMode": "random-hours",
     "randomHoursPerDay": 7,
-    "active": true
+    "active": true,
+    "thumbnail": "assets/sammeltjes-webp/thumbs/waddenwriemel.webp"
   }
 ]

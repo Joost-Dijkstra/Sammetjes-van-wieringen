@@ -5,626 +5,143 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Sammeltjes Admin</title>
     <meta name="robots" content="noindex,nofollow" />
-    <link
-      rel="icon"
-      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f172a'/%3E%3Ccircle cx='32' cy='32' r='16' fill='%2338bdf8'/%3E%3C/svg%3E"
-    />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-      crossorigin=""
-    />
-    <link rel="stylesheet" href="admin.css" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f172a'/%3E%3Ccircle cx='32' cy='32' r='16' fill='%2338bdf8'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="tailwind.generated.css?v=20260711" />
+    <link rel="stylesheet" href="vendor/leaflet/leaflet.css?v=1.9.4" />
+    <link rel="stylesheet" href="admin.css?v=20260711" />
   </head>
   <body class="admin-body">
-    <div id="login-screen" class="min-h-screen bg-slate-950/90 px-4 py-10">
+    <div id="login-screen" class="min-h-screen bg-slate-950/90 px-4 py-10" data-testid="admin-login-screen">
       <div class="mx-auto max-w-md rounded-3xl border border-white/10 bg-slate-900/90 p-8 shadow-2xl">
-        <p class="text-xs font-semibold uppercase tracking-[0.3em] text-cyan-300/80">Verborgen admin</p>
+        <p class="text-xs font-semibold uppercase tracking-[0.3em] text-cyan-300/80">Lokale beheerpagina</p>
         <h1 class="mt-3 text-3xl font-semibold text-white">Sammeltjes van Wieringen</h1>
-        <p class="mt-3 text-sm leading-6 text-slate-300">
-          Deze pagina is alleen voor beheer. Vul het developer wachtwoord in om de editor te openen.
+        <p id="admin-access-note" class="mt-3 text-sm leading-6 text-slate-300">
+          Open deze pagina via de lokale dev-server en vul het developerwachtwoord in.
         </p>
-
         <form id="login-form" class="mt-6 space-y-4">
           <label class="block">
             <span class="mb-2 block text-sm font-medium text-slate-200">Wachtwoord</span>
-            <input
-              id="password-input"
-              type="password"
-              class="w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-white outline-none transition focus:border-cyan-400"
-              placeholder="sammeltjesdev"
-              autocomplete="current-password"
-            />
+            <input id="password-input" type="password" data-testid="admin-password-input" class="w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-white outline-none transition focus:border-cyan-400" autocomplete="current-password" required />
           </label>
-
-          <p id="login-error" class="hidden rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
-            Onjuist wachtwoord.
-          </p>
-
-          <button
-            type="submit"
-            class="w-full rounded-2xl bg-cyan-400 px-4 py-3 font-semibold text-slate-950 transition hover:bg-cyan-300"
-          >
-            Open admin
-          </button>
+          <p id="login-error" class="hidden rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200" role="alert">Onjuist wachtwoord.</p>
+          <button id="login-submit" type="submit" class="w-full rounded-2xl bg-cyan-400 px-4 py-3 font-semibold text-slate-950 transition hover:bg-cyan-300">Open admin</button>
         </form>
       </div>
     </div>
 
-    <div id="admin-app" class="hidden min-h-screen">
-      <header class="border-b border-slate-200 bg-white/95 backdrop-blur">
-        <div class="mx-auto flex max-w-[1800px] flex-wrap items-center justify-between gap-4 px-4 py-4 lg:px-6">
+    <div id="admin-app" class="hidden" data-testid="admin-app">
+      <header class="admin-header border-b border-slate-200 bg-white/95">
+        <div class="flex flex-wrap items-center justify-between gap-3 px-4 py-3 lg:px-5">
           <div>
-            <p class="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-700">Developer / Admin</p>
-            <h1 class="text-2xl font-semibold text-slate-900">Sammeltjes beheerkaart</h1>
-            <p class="mt-1 text-sm text-slate-600">
-              Klik op de kaart om een nieuw Sammeltje te maken, of klik op een marker om te bewerken.
-            </p>
+            <p class="text-xs font-semibold uppercase tracking-[0.25em] text-cyan-700">Developer / Admin</p>
+            <h1 class="text-xl font-semibold text-slate-900">Sammeltjes beheerkaart</h1>
           </div>
-
           <div class="flex flex-wrap items-center gap-2">
-            <span id="item-count" class="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700">
-              0 Sammeltjes
-            </span>
-            <span id="load-status" class="rounded-full border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-800">
-              Laadt data...
-            </span>
-            <span id="protocol-warning" class="hidden rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-medium text-rose-800">
-              Open via lokale server voor stabiele tiles en JSON
-            </span>
-            <button id="simulate-player-btn" type="button" class="admin-btn admin-btn--ghost">
-              Simulate Player Position
-            </button>
-            <button id="import-btn" type="button" class="admin-btn admin-btn--ghost">
-              Import JSON
-            </button>
-            <button id="save-btn" type="button" class="admin-btn admin-btn--primary">Save</button>
-            <button id="logout-btn" type="button" class="admin-btn admin-btn--ghost">Logout</button>
+            <span id="item-count" data-testid="admin-item-count" class="rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700">0 Sammeltjes</span>
+            <span id="load-status" data-testid="admin-load-status" class="rounded-full border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800" role="status" aria-live="polite">Laadt data...</span>
+            <span id="protocol-warning" class="hidden rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-800">Start via dev-server.py</span>
+            <button id="simulate-player-btn" type="button" class="admin-btn admin-btn--ghost">Testspeler plaatsen</button>
+            <button id="import-btn" type="button" class="admin-btn admin-btn--ghost">Import JSON</button>
+            <button id="save-btn" data-testid="admin-save-btn" type="button" class="admin-btn admin-btn--primary">Opslaan</button>
+            <button id="logout-btn" type="button" class="admin-btn admin-btn--ghost">Uitloggen</button>
             <input id="import-input" type="file" accept="application/json,.json" class="hidden" />
           </div>
         </div>
       </header>
 
-      <main class="mx-auto grid min-h-[calc(100vh-88px)] max-w-[1800px] gap-0 xl:grid-cols-[minmax(0,1fr)_430px]">
-        <section class="relative min-h-[52vh] border-b border-slate-200 bg-slate-100 xl:min-h-0 xl:border-b-0 xl:border-r">
-          <div id="admin-map" class="absolute inset-0"></div>
-
-          <div class="pointer-events-none absolute left-4 top-4 z-[900] flex max-w-sm flex-col gap-3">
-            <div class="rounded-2xl border border-white/60 bg-white/90 px-4 py-3 shadow-lg backdrop-blur">
-              <p class="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">Kaarttools</p>
-              <p id="map-mode-label" class="mt-2 text-sm font-medium text-slate-800">
-                Kaartklik maakt een nieuw Sammeltje. Klik en sleep een marker om hem te verplaatsen.
-              </p>
-            </div>
-
-            <div class="rounded-2xl border border-white/60 bg-white/90 px-4 py-3 shadow-lg backdrop-blur">
-              <p class="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">Legenda</p>
-              <div class="mt-3 flex flex-wrap gap-2 text-xs font-medium text-slate-700">
-                <span class="legend-pill legend-pill--common">common</span>
-                <span class="legend-pill legend-pill--rare">rare</span>
-                <span class="legend-pill legend-pill--legendary">legendary</span>
-              </div>
-            </div>
+      <main class="admin-workspace">
+        <section class="admin-map-pane relative border-slate-200 bg-slate-100">
+          <div id="admin-map" class="absolute inset-0" data-testid="admin-map"></div>
+          <div class="pointer-events-none absolute left-3 top-3 z-[900] max-w-sm rounded-2xl border border-white/60 bg-white/90 px-4 py-3 shadow-lg backdrop-blur">
+            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Kaartmodus</p>
+            <p id="map-mode-label" data-testid="admin-map-mode-label" class="mt-1 text-sm font-medium text-slate-800">Kaartklik maakt een nieuw Sammeltje.</p>
           </div>
         </section>
 
         <aside class="admin-sidebar bg-white">
-          <div class="space-y-5 p-4 lg:p-6">
-            <section class="admin-card">
-              <div class="flex items-start justify-between gap-3">
+          <div class="space-y-3 p-3 lg:p-4">
+            <section class="admin-card admin-card--selector">
+              <label class="admin-field">
+                <span>Geselecteerd Sammeltje</span>
+                <select id="item-selector" data-testid="admin-item-selector" aria-label="Kies een Sammeltje"></select>
+              </label>
+              <p class="mt-2 text-xs text-slate-500">Je bewerkt steeds precies het hierboven gekozen Sammeltje.</p>
+            </section>
+
+            <section id="editor-card" class="admin-card admin-collapsible">
+              <div class="admin-card__header">
                 <div>
-                  <p class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Bewerkpaneel</p>
-                  <h2 class="mt-1 text-xl font-semibold text-slate-900">Sammeltje details</h2>
+                  <p class="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">Bewerkpaneel</p>
+                  <h2 class="mt-1 text-xl font-semibold text-slate-900">Eigenschappen</h2>
                 </div>
-                <button id="delete-btn" type="button" class="admin-btn admin-btn--danger">Delete</button>
+                <div class="flex gap-2">
+                  <button id="delete-btn" type="button" class="admin-btn admin-btn--danger">Verwijder</button>
+                  <button type="button" class="admin-collapse-btn" data-admin-collapse="editor-body" aria-expanded="true">Inklappen</button>
+                </div>
               </div>
-
-              <form id="editor-form" class="mt-5 space-y-4">
-                <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-2">
-                  <label class="admin-field">
-                    <span>ID</span>
-                    <input id="field-id" name="id" type="text" />
-                  </label>
-                  <label class="admin-field">
-                    <span>Naam</span>
-                    <input id="field-name" name="name" type="text" />
-                  </label>
-                </div>
-
-                <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-2">
-                  <label class="admin-field">
-                    <span>Type</span>
-                    <select id="field-type" name="type">
-                      <option value="fixed">fixed</option>
-                      <option value="roaming">roaming</option>
-                      <option value="wild">wild</option>
-                    </select>
-                  </label>
-                  <label class="admin-field">
-                    <span>Biome</span>
-                    <input id="field-biome" name="biome" type="text" placeholder="dijk, veld, haven..." />
-                  </label>
-                </div>
-
-                <div class="grid gap-4 md:grid-cols-3 xl:grid-cols-3">
-                  <label class="admin-field">
-                    <span>Lat</span>
-                    <input id="field-lat" name="lat" type="number" step="0.000001" />
-                  </label>
-                  <label class="admin-field">
-                    <span>Lng</span>
-                    <input id="field-lng" name="lng" type="number" step="0.000001" />
-                  </label>
-                  <label class="admin-field">
-                    <span>Radius</span>
-                    <input id="field-radius" name="radius" type="number" step="1" min="50" max="500" />
-                  </label>
-                </div>
-
-                <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-2">
-                  <label class="admin-field">
-                    <span>Rarity</span>
-                    <select id="field-rarity" name="rarity">
-                      <option value="common">common</option>
-                      <option value="rare">rare</option>
-                      <option value="legendary">legendary</option>
-                    </select>
-                  </label>
-                  <label class="admin-field admin-field--checkbox">
-                    <input id="field-active" name="active" type="checkbox" />
-                    <span>Active</span>
-                  </label>
-                </div>
-
-                <label class="admin-field admin-field--checkbox admin-field--inline-checkbox">
-                  <input id="field-relocate" name="relocate" type="checkbox" />
-                  <span>Verplaats naar: vink aan en klik daarna op de kaart</span>
-                </label>
-
-                <label class="admin-field">
-                  <span>Image</span>
-                  <input id="field-image" name="image" type="text" placeholder="assets/sammeltjes/..." />
-                </label>
-
-                <label class="admin-field">
-                  <span>Description</span>
-                  <textarea id="field-description" name="description" rows="4"></textarea>
-                </label>
-
-                <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-2">
-                  <label class="admin-field">
-                    <span>Gedrag in radargebied</span>
-                    <select id="field-behavior" name="behavior">
-                      <option value="curious">Nieuwsgierig - loopt naar de speler toe</option>
-                      <option value="scared">Bang - loopt bij de speler weg</option>
-                      <option value="shy">Verlegen - blijft staan</option>
-                    </select>
-                  </label>
-                  <label class="admin-field">
-                    <span>Snelheid (km/u)</span>
-                    <input id="field-speed-kmh" name="speedKmh" type="number" step="0.1" min="0" />
-                  </label>
-                </div>
-
-                <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-2">
-                  <label class="admin-field">
-                    <span>Te vinden op</span>
-                    <select id="field-availability-mode" name="availabilityMode">
-                      <option value="all-day">Hele dag</option>
-                      <option value="morning">Ochtend</option>
-                      <option value="afternoon">Middag</option>
-                      <option value="evening">Avond</option>
-                      <option value="night">Nacht</option>
-                      <option value="random-hours">Willekeurig aantal uren per dag</option>
-                    </select>
-                  </label>
-                  <label class="admin-field">
-                    <span>Willekeurige uren per dag</span>
-                    <input
-                      id="field-random-hours"
-                      name="randomHoursPerDay"
-                      type="number"
-                      step="1"
-                      min="1"
-                      max="24"
-                    />
-                  </label>
-                </div>
-              </form>
-
-              <div class="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
-                <div class="border-b border-slate-200 px-4 py-3 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-                  Image preview
-                </div>
-                <div class="p-4">
-                  <img id="image-preview" class="h-48 w-full rounded-2xl object-cover" src="" alt="Preview" />
-                </div>
+              <div id="editor-body" class="admin-card__body">
+                <form id="editor-form" class="space-y-3" data-testid="admin-editor-form">
+                  <div class="admin-field-grid admin-field-grid--2">
+                    <label class="admin-field"><span>ID</span><input id="field-id" name="id" type="text" /></label>
+                    <label class="admin-field"><span>Naam</span><input id="field-name" name="name" type="text" /></label>
+                    <label class="admin-field"><span>Type</span><select id="field-type" name="type"><option value="fixed">fixed</option><option value="roaming">roaming</option><option value="wild">wild</option></select></label>
+                    <label class="admin-field"><span>Biome</span><input id="field-biome" name="biome" type="text" placeholder="dijk, veld, haven..." /></label>
+                  </div>
+                  <div class="admin-field-grid admin-field-grid--3">
+                    <label class="admin-field"><span>Lat</span><input id="field-lat" name="lat" type="number" step="0.000001" /></label>
+                    <label class="admin-field"><span>Lng</span><input id="field-lng" name="lng" type="number" step="0.000001" /></label>
+                    <label class="admin-field"><span>Radius (50-500 m)</span><input id="field-radius" name="radius" type="number" step="1" min="50" max="500" /></label>
+                  </div>
+                  <div class="admin-field-grid admin-field-grid--2">
+                    <label class="admin-field"><span>Zeldzaamheid</span><select id="field-rarity" name="rarity"><option value="common">common</option><option value="rare">rare</option><option value="legendary">legendary</option></select></label>
+                    <label class="admin-field admin-field--checkbox"><input id="field-active" name="active" type="checkbox" /><span>In game actief</span></label>
+                  </div>
+                  <label class="admin-field admin-field--checkbox admin-field--inline-checkbox admin-relocate"><input id="field-relocate" name="relocate" type="checkbox" /><span>Verplaats naar: vink aan en klik daarna op de kaart</span></label>
+                  <label class="admin-field"><span>Beschrijving</span><textarea id="field-description" name="description" rows="3"></textarea></label>
+                  <div class="admin-field-grid admin-field-grid--2">
+                    <label class="admin-field"><span>Gedrag in radar</span><select id="field-behavior" name="behavior"><option value="curious">Nieuwsgierig - naar speler toe</option><option value="scared">Bang - bij speler weg</option><option value="shy">Verlegen - blijft staan</option></select></label>
+                    <label class="admin-field"><span>Snelheid (km/u)</span><input id="field-speed-kmh" name="speedKmh" type="number" step="0.1" min="0" max="15" /></label>
+                    <label class="admin-field"><span>Te vinden op</span><select id="field-availability-mode" name="availabilityMode"><option value="all-day">Hele dag</option><option value="morning">Ochtend</option><option value="afternoon">Middag</option><option value="evening">Avond</option><option value="night">Nacht</option><option value="random-hours">Willekeurig aantal uren</option></select></label>
+                    <label class="admin-field"><span>Willekeurige uren per dag</span><input id="field-random-hours" name="randomHoursPerDay" type="number" step="1" min="1" max="24" /></label>
+                  </div>
+                  <details class="admin-assets">
+                    <summary>Afbeeldingspaden</summary>
+                    <label class="admin-field"><span>Grote afbeelding</span><input id="field-image" name="image" type="text" /></label>
+                    <label class="admin-field"><span>Thumbnail</span><input id="field-thumbnail" name="thumbnail" type="text" /></label>
+                  </details>
+                </form>
+                <div class="admin-preview"><img id="image-preview" src="" alt="Afbeelding van geselecteerd Sammeltje" /></div>
               </div>
             </section>
 
-            <section class="admin-card">
-              <p class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Developer testpaneel</p>
-              <h2 class="mt-1 text-xl font-semibold text-slate-900">Simulate Player Position</h2>
-              <p class="mt-2 text-sm leading-6 text-slate-600">
-                Zet de testmodus aan en klik daarna op de kaart om een speler marker te plaatsen. De radar radius van
-                60 meter wordt meteen zichtbaar.
-              </p>
-              <div class="mt-4 flex flex-wrap gap-2">
-                <button id="clear-player-btn" type="button" class="admin-btn admin-btn--ghost">
-                  Clear player marker
-                </button>
-                <span id="player-status" class="rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
-                  Geen gesimuleerde speler
-                </span>
+            <section id="test-card" class="admin-card admin-collapsible is-collapsed">
+              <div class="admin-card__header">
+                <div><p class="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">Testtools</p><h2 class="mt-1 text-lg font-semibold text-slate-900">Speler en radar</h2></div>
+                <button type="button" class="admin-collapse-btn" data-admin-collapse="test-body" aria-expanded="false">Openen</button>
+              </div>
+              <div id="test-body" class="admin-card__body" hidden>
+                <p class="text-sm leading-6 text-slate-600">Klik bovenaan op Testspeler plaatsen en daarna op de kaart. De radar van 60 meter verschijnt direct.</p>
+                <div class="mt-3 flex flex-wrap gap-2"><button id="clear-player-btn" type="button" class="admin-btn admin-btn--ghost">Wis testspeler</button><span id="player-status" class="rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">Geen gesimuleerde speler</span></div>
               </div>
             </section>
 
-            <section class="admin-card">
-              <div class="flex items-center justify-between gap-3">
-                <div>
-                  <p class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Overzicht</p>
-                  <h2 class="mt-1 text-xl font-semibold text-slate-900">Alle Sammeltjes</h2>
-                </div>
-                <button id="sort-nearest-btn" type="button" class="admin-btn admin-btn--ghost">Sort by map</button>
+            <section id="overview-card" class="admin-card admin-collapsible is-collapsed">
+              <div class="admin-card__header">
+                <div><p class="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">Overzicht</p><h2 class="mt-1 text-lg font-semibold text-slate-900">Alle Sammeltjes</h2></div>
+                <button type="button" class="admin-collapse-btn" data-admin-collapse="overview-body" aria-expanded="false">Openen</button>
               </div>
-              <div id="item-list" class="mt-4 space-y-2"></div>
+              <div id="overview-body" class="admin-card__body" hidden>
+                <div class="flex gap-2"><input id="item-search" class="admin-search" type="search" placeholder="Zoek op naam, type of biome" /><button id="sort-nearest-btn" type="button" class="admin-btn admin-btn--ghost">Sorteer op kaart</button></div>
+                <div id="item-list" class="mt-3 space-y-2" data-testid="admin-item-list"></div>
+              </div>
             </section>
           </div>
         </aside>
       </main>
     </div>
 
-    <script
-      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-      crossorigin=""
-    ></script>
-    <script id="admin-data-fallback" type="application/json">
-      [
-        {
-          "id": "wieringer-wolkje",
-          "name": "Wieringer Wolkje",
-          "type": "fixed",
-          "biome": "lucht",
-          "lat": 52.935241,
-          "lng": 5.035408,
-          "radius": 80,
-          "rarity": "common",
-          "description": "Een pluizig luchtvriendje dat graag boven de haven bij Den Oever dobbert.",
-          "image": "assets/sammeltjes/wieringer-wolkje.png",
-          "behavior": "shy",
-          "speedKmh": 0,
-          "availabilityMode": "all-day",
-          "randomHoursPerDay": 6,
-          "active": true
-        },
-        {
-          "id": "dijkdraakje",
-          "name": "Dijkdraakje",
-          "type": "roaming",
-          "biome": "dijk",
-          "lat": 52.920698,
-          "lng": 4.958911,
-          "radius": 120,
-          "rarity": "rare",
-          "description": "Dit mini-draakje warmt zijn pootjes op de stenen van de oude dijk.",
-          "image": "assets/sammeltjes/dijkdraakje.png",
-          "behavior": "shy",
-          "speedKmh": 0.6,
-          "availabilityMode": "all-day",
-          "randomHoursPerDay": 6,
-          "active": true
-        },
-        {
-          "id": "kwelder-sprietje",
-          "name": "Kwelder Sprietje",
-          "type": "fixed",
-          "biome": "kwelder",
-          "lat": 52.934545,
-          "lng": 5.001774,
-          "radius": 60,
-          "rarity": "common",
-          "description": "Een dansend graswezentje dat zachtjes ritselt als de zeewind langs trekt.",
-          "image": "assets/sammeltjes/kwelder-sprietje.png",
-          "behavior": "shy",
-          "speedKmh": 0,
-          "availabilityMode": "all-day",
-          "randomHoursPerDay": 6,
-          "active": true
-        },
-        {
-          "id": "kapel-kabbeltje",
-          "name": "Kapel Kabbeltje",
-          "type": "fixed",
-          "biome": "mystiek",
-          "lat": 52.907369,
-          "lng": 4.962283,
-          "radius": 80,
-          "rarity": "legendary",
-          "description": "Een gouden fluistergeest die alleen verschijnt bij stille plekjes met oud verhaal.",
-          "image": "assets/sammeltjes/kapel-kabbeltje.png",
-          "behavior": "shy",
-          "speedKmh": 0,
-          "availabilityMode": "evening",
-          "randomHoursPerDay": 6,
-          "active": true
-        },
-        {
-          "id": "rietritter",
-          "name": "Rietritter",
-          "type": "roaming",
-          "biome": "rietland",
-          "lat": 52.9204,
-          "lng": 4.9821,
-          "radius": 290,
-          "rarity": "common",
-          "description": "Een dapper schildknaapje dat tussen de rietkragen op patrouille loopt.",
-          "image": "assets/sammeltjes/rietritter.png",
-          "behavior": "curious",
-          "speedKmh": 2.8,
-          "availabilityMode": "all-day",
-          "randomHoursPerDay": 6,
-          "active": true
-        },
-        {
-          "id": "mistmuis",
-          "name": "Mistmuis",
-          "type": "roaming",
-          "biome": "mystiek",
-          "lat": 52.898593,
-          "lng": 4.953589,
-          "radius": 110,
-          "rarity": "rare",
-          "description": "Een nieuwsgierige muis die in zachte bochten door de ochtendmist sluipt.",
-          "image": "assets/sammeltjes/mistmuis.png",
-          "behavior": "scared",
-          "speedKmh": 2.4,
-          "availabilityMode": "night",
-          "randomHoursPerDay": 6,
-          "active": true
-        },
-        {
-          "id": "akkervonk",
-          "name": "Akkervonk",
-          "type": "roaming",
-          "biome": "veld",
-          "lat": 52.91076,
-          "lng": 5.009551,
-          "radius": 130,
-          "rarity": "common",
-          "description": "Een knetterend lichtje dat graag langs akkers huppelt als de zon laag staat.",
-          "image": "assets/sammeltjes/akkervonk.png",
-          "behavior": "curious",
-          "speedKmh": 3.4,
-          "availabilityMode": "evening",
-          "randomHoursPerDay": 6,
-          "active": true
-        },
-        {
-          "id": "schelpenwachter",
-          "name": "Schelpenwachter",
-          "type": "roaming",
-          "biome": "kust",
-          "lat": 52.92915,
-          "lng": 5.038584,
-          "radius": 270,
-          "rarity": "rare",
-          "description": "Een rustige strandwachter die schelpen telt en altijd een stap vooruit denkt.",
-          "image": "assets/sammeltjes/schelpenwachter.png",
-          "behavior": "shy",
-          "speedKmh": 1.8,
-          "availabilityMode": "all-day",
-          "randomHoursPerDay": 6,
-          "active": true
-        },
-        {
-          "id": "stormster",
-          "name": "Stormster",
-          "type": "wild",
-          "biome": "lucht",
-          "lat": 52.9038,
-          "lng": 4.9514,
-          "radius": 420,
-          "rarity": "rare",
-          "description": "Een vallende ster die ergens op Wieringen neerstrijkt zodra de lucht onrustig voelt.",
-          "image": "assets/sammeltjes/stormster.png",
-          "behavior": "scared",
-          "speedKmh": 4.8,
-          "availabilityMode": "random-hours",
-          "randomHoursPerDay": 7,
-          "active": true
-        },
-        {
-          "id": "goudglim",
-          "name": "Goudglim",
-          "type": "wild",
-          "biome": "mystiek",
-          "lat": 52.8972,
-          "lng": 4.9738,
-          "radius": 380,
-          "rarity": "legendary",
-          "description": "Deze zeldzame schitteraar laat maar heel even een gouden spoor over het eiland achter.",
-          "image": "assets/sammeltjes/goudglim.png",
-          "behavior": "shy",
-          "speedKmh": 3.2,
-          "availabilityMode": "random-hours",
-          "randomHoursPerDay": 4,
-          "active": true
-        },
-        {
-          "id": "schapenherdertje",
-          "name": "Schapenherdertje",
-          "type": "roaming",
-          "biome": "schaapsveld",
-          "lat": 52.921578,
-          "lng": 4.995134,
-          "radius": 290,
-          "rarity": "common",
-          "description": "Een klein Sammeltje dat altijd tussen de Wieringer schapen loopt en ze zachtjes bijeen houdt.",
-          "image": "assets/sammeltjes/schapenherdertje.png",
-          "behavior": "curious",
-          "speedKmh": 1.7,
-          "availabilityMode": "all-day",
-          "randomHoursPerDay": 6,
-          "active": true
-        },
-        {
-          "id": "boer-bietje",
-          "name": "Boer Bietje",
-          "type": "roaming",
-          "biome": "akker",
-          "lat": 52.9109,
-          "lng": 4.9835,
-          "radius": 120,
-          "rarity": "common",
-          "description": "Een vrolijk veld-Sammeltje dat dol is op akkers, aardappels en bieten.",
-          "image": "assets/sammeltjes/boer-bietje.png",
-          "behavior": "curious",
-          "speedKmh": 2.1,
-          "availabilityMode": "all-day",
-          "randomHoursPerDay": 6,
-          "active": true
-        },
-        {
-          "id": "molenmaatje",
-          "name": "Molenmaatje",
-          "type": "fixed",
-          "biome": "molen",
-          "lat": 52.934371,
-          "lng": 5.026314,
-          "radius": 55,
-          "rarity": "rare",
-          "description": "Een windvriend Sammeltje dat bij oude molens woont en met de wieken meedraait.",
-          "image": "assets/sammeltjes/molenmaatje.png",
-          "behavior": "shy",
-          "speedKmh": 0,
-          "availabilityMode": "all-day",
-          "randomHoursPerDay": 6,
-          "active": true
-        },
-        {
-          "id": "nettenvissertje",
-          "name": "Nettenvissertje",
-          "type": "roaming",
-          "biome": "haven",
-          "lat": 52.9317,
-          "lng": 5.0152,
-          "radius": 385,
-          "rarity": "common",
-          "description": "Een kust-Sammeltje dat kleine visnetjes verzamelt en altijd naar de zee kijkt.",
-          "image": "assets/sammeltjes/nettenvissertje.png",
-          "behavior": "shy",
-          "speedKmh": 1.6,
-          "availabilityMode": "evening",
-          "randomHoursPerDay": 6,
-          "active": true
-        },
-        {
-          "id": "opa-duinbaard",
-          "name": "Opa Duinbaard",
-          "type": "fixed",
-          "biome": "duin",
-          "lat": 52.890978,
-          "lng": 4.912743,
-          "radius": 270,
-          "rarity": "rare",
-          "description": "Een oud wijs Sammeltje met een lange baard van duingras en zand.",
-          "image": "assets/sammeltjes/opa-duinbaard.png",
-          "behavior": "shy",
-          "speedKmh": 0,
-          "availabilityMode": "evening",
-          "randomHoursPerDay": 6,
-          "active": true
-        },
-        {
-          "id": "oma-wierwortel",
-          "name": "Oma Wierwortel",
-          "type": "roaming",
-          "biome": "kruidentuin",
-          "lat": 52.910087,
-          "lng": 4.970451,
-          "radius": 169,
-          "rarity": "common",
-          "description": "Een vriendelijk oud Sammeltje dat kruiden en wortels verzamelt.",
-          "image": "assets/sammeltjes/oma-wierwortel.png",
-          "behavior": "curious",
-          "speedKmh": 1.7,
-          "availabilityMode": "all-day",
-          "randomHoursPerDay": 6,
-          "active": true
-        },
-        {
-          "id": "dijkwacht",
-          "name": "Dijkwacht",
-          "type": "roaming",
-          "biome": "dijk",
-          "lat": 52.928106,
-          "lng": 4.96511,
-          "radius": 150,
-          "rarity": "rare",
-          "description": "Een klein waakzaam Sammeltje dat 's nachts over de dijken loopt.",
-          "image": "assets/sammeltjes/dijkwacht.png",
-          "behavior": "scared",
-          "speedKmh": 2.6,
-          "availabilityMode": "night",
-          "randomHoursPerDay": 6,
-          "active": true
-        },
-        {
-          "id": "havenpluimpje",
-          "name": "Havenpluimpje",
-          "type": "roaming",
-          "biome": "haven",
-          "lat": 52.938722,
-          "lng": 5.032376,
-          "radius": 95,
-          "rarity": "common",
-          "description": "Een luchtig Sammeltje dat rond de havenpalen en scheepstouwen zweeft.",
-          "image": "assets/sammeltjes/havenpluimpje.png",
-          "behavior": "curious",
-          "speedKmh": 2.3,
-          "availabilityMode": "all-day",
-          "randomHoursPerDay": 6,
-          "active": true
-        },
-        {
-          "id": "mosselmop",
-          "name": "Mosselmop",
-          "type": "roaming",
-          "biome": "kust",
-          "lat": 52.9335,
-          "lng": 5.0084,
-          "radius": 90,
-          "rarity": "common",
-          "description": "Een grappig Sammeltje dat altijd met schelpen en mossels speelt.",
-          "image": "assets/sammeltjes/mosselmop.png",
-          "behavior": "shy",
-          "speedKmh": 1.9,
-          "availabilityMode": "all-day",
-          "randomHoursPerDay": 6,
-          "active": true
-        },
-        {
-          "id": "waddenwriemel",
-          "name": "Waddenwriemel",
-          "type": "roaming",
-          "biome": "wad",
-          "lat": 52.931461,
-          "lng": 4.982468,
-          "radius": 130,
-          "rarity": "rare",
-          "description": "Een nieuwsgierig Sammeltje dat door het wad kruipt en glinsteringen zoekt.",
-          "image": "assets/sammeltjes/waddenwriemel.png",
-          "behavior": "curious",
-          "speedKmh": 2.8,
-          "availabilityMode": "random-hours",
-          "randomHoursPerDay": 7,
-          "active": true
-        }
-      ]
-    </script>
-    <script src="admin.js"></script>
+    <script src="vendor/leaflet/leaflet.js?v=1.9.4"></script>
+    <script src="shared-config.js?v=20260711"></script>
+    <script src="admin.js?v=20260711"></script>
   </body>
 </html>

@@ -10,6 +10,7 @@
     />
     <meta name="theme-color" content="#efe5c7" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Sammeltjes" />
     <link rel="manifest" href="manifest.webmanifest" />
@@ -18,22 +19,17 @@
       rel="icon"
       href="assets/icons/icon-192.png"
     />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-      crossorigin=""
-    />
-    <link rel="stylesheet" href="style.css?v=20260327a" />
+    <link rel="stylesheet" href="tailwind.generated.css?v=20260711" />
+    <link rel="stylesheet" href="vendor/leaflet/leaflet.css?v=1.9.4" />
+    <link rel="stylesheet" href="style.css?v=20260711" />
   </head>
   <body class="fantasy-ui antialiased">
-    <div id="app" class="relative min-h-screen overflow-hidden">
-      <div id="map" class="absolute inset-0"></div>
+    <div id="app" class="relative min-h-screen overflow-hidden" data-testid="game-app">
+      <div id="map" class="absolute inset-0" data-testid="game-map"></div>
       <div class="pointer-events-none absolute inset-0 aurora-overlay"></div>
 
       <header class="pointer-events-none absolute inset-x-0 top-0 z-[900] p-4">
-        <div id="hud-panel" class="pointer-events-auto mx-auto max-w-md soft-panel collapsible-panel">
+        <div id="hud-panel" class="pointer-events-auto mx-auto max-w-md soft-panel collapsible-panel" data-testid="hud-panel">
           <div class="panel-header-row">
             <div>
               <p class="text-[11px] uppercase tracking-[0.35em] text-emerald-700/80">Locatiegame</p>
@@ -58,10 +54,10 @@
                 </p>
               </div>
               <div class="flex shrink-0 flex-col gap-2">
-                <button id="toggle-all-btn" class="soft-button soft-button--small" type="button">
+                <button id="toggle-all-btn" class="soft-button soft-button--small" type="button" data-testid="toggle-all-btn">
                   Toon alles
                 </button>
-                <button id="demo-toggle-btn" class="soft-button soft-button--small" type="button">
+                <button id="demo-toggle-btn" class="soft-button soft-button--small" type="button" data-testid="demo-toggle-btn">
                   Demo besturen
                 </button>
                 <button id="recenter-btn" class="soft-button soft-button--small" type="button">
@@ -94,7 +90,8 @@
 
       <aside
         id="mini-radar-panel"
-        class="absolute left-4 top-[138px] z-[850] w-40 soft-panel soft-panel--compact collapsible-panel"
+        class="game-mini-radar absolute left-4 z-[850] w-52 soft-panel soft-panel--compact collapsible-panel"
+        data-testid="mini-radar-panel"
       >
         <div class="panel-header-row">
           <div>
@@ -139,6 +136,7 @@
       <section
         id="scan-panel"
         class="absolute inset-x-4 bottom-[104px] z-[860] mx-auto max-w-md soft-panel soft-panel--compact collapsible-panel"
+        data-testid="scan-panel"
       >
         <div class="panel-header-row">
           <div>
@@ -165,7 +163,8 @@
 
       <section
         id="radar-panel"
-        class="view-panel hidden absolute inset-x-0 top-[136px] bottom-[96px] z-[920] px-4"
+        class="view-panel game-view-panel hidden absolute inset-x-0 bottom-[96px] z-[920] px-4"
+        data-testid="radar-panel"
       >
         <div class="mx-auto flex h-full max-w-md flex-col gap-4 soft-panel">
           <div class="flex items-center justify-between gap-3">
@@ -202,7 +201,8 @@
 
       <section
         id="book-panel"
-        class="view-panel hidden absolute inset-x-0 top-[136px] bottom-[96px] z-[920] px-4"
+        class="view-panel game-view-panel hidden absolute inset-x-0 bottom-[96px] z-[920] px-4"
+        data-testid="book-panel"
       >
         <div class="mx-auto flex h-full max-w-md flex-col gap-4 soft-panel">
           <div class="flex items-start justify-between gap-3">
@@ -218,14 +218,14 @@
             </button>
           </div>
 
-          <div id="book-grid" class="grid grid-cols-2 gap-3 overflow-y-auto pb-1 sm:grid-cols-2"></div>
+          <div id="book-grid" class="grid grid-cols-2 gap-3 overflow-y-auto pb-1 sm:grid-cols-2" data-testid="book-grid"></div>
         </div>
       </section>
 
-      <div id="toast" class="toast hidden"></div>
+      <div id="toast" class="toast hidden" role="status" aria-live="polite" data-testid="toast"></div>
 
-      <div id="discovery-modal" class="fixed inset-0 z-[1100] hidden items-end justify-center p-4 md:items-center">
-        <div class="absolute inset-0 bg-slate-950/50 backdrop-blur-sm"></div>
+      <div id="discovery-modal" class="fixed inset-0 z-[1100] hidden items-end justify-center p-4 md:items-center" role="dialog" aria-modal="true" aria-labelledby="discovery-name" tabindex="-1" data-testid="discovery-modal">
+        <div id="discovery-backdrop" class="absolute inset-0 bg-slate-950/50 backdrop-blur-sm"></div>
         <div class="relative z-10 mx-auto w-full max-w-sm soft-panel soft-panel--modal">
           <button
             id="dismiss-discovery-btn"
@@ -233,7 +233,7 @@
             type="button"
             aria-label="Sluit ontdekking"
           >
-            ✕
+            &#10005;
           </button>
 
           <p class="text-[11px] uppercase tracking-[0.3em] text-amber-600/80">Nieuw Sammeltje ontdekt!</p>
@@ -261,7 +261,7 @@
         </div>
       </div>
 
-      <div id="book-detail-modal" class="fixed inset-0 z-[1100] hidden items-end justify-center p-4 md:items-center">
+      <div id="book-detail-modal" class="fixed inset-0 z-[1100] hidden items-end justify-center p-4 md:items-center" role="dialog" aria-modal="true" aria-labelledby="book-detail-name" tabindex="-1" data-testid="book-detail-modal">
         <div id="book-detail-backdrop" class="absolute inset-0 bg-slate-950/55 backdrop-blur-sm"></div>
         <div class="relative z-10 mx-auto w-full max-w-sm soft-panel soft-panel--modal">
           <button
@@ -270,7 +270,7 @@
             type="button"
             aria-label="Sluit Sammeltje detail"
           >
-            ✕
+            &#10005;
           </button>
 
           <p class="text-[11px] uppercase tracking-[0.3em] text-emerald-700/80">Sammeltjesboek</p>
@@ -294,374 +294,26 @@
         </div>
       </div>
 
-      <nav class="absolute inset-x-0 bottom-0 z-[1000] p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+      <nav class="absolute inset-x-0 bottom-0 z-[1000] p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]" aria-label="Hoofdnavigatie">
         <div class="mx-auto flex max-w-md items-center justify-between gap-2 rounded-full border border-white/70 bg-white/85 p-2 shadow-2xl backdrop-blur-xl">
           <button class="nav-button is-active" data-view="map" type="button">
-            <span class="nav-button__icon">🗺️</span>
+            <span class="nav-button__icon" aria-hidden="true">&#128506;</span>
             <span>Kaart</span>
           </button>
           <button class="nav-button" data-view="book" type="button">
-            <span class="nav-button__icon">📘</span>
+            <span class="nav-button__icon" aria-hidden="true">&#128216;</span>
             <span>Sammeltjesboek</span>
           </button>
           <button class="nav-button" data-view="radar" type="button">
-            <span class="nav-button__icon">✨</span>
+            <span class="nav-button__icon" aria-hidden="true">&#10024;</span>
             <span>Radar</span>
           </button>
         </div>
       </nav>
     </div>
-
-    <script id="sammeltjes-fallback" type="application/json">
-      [
-        {
-          "id": "wieringer-wolkje",
-          "name": "Wieringer Wolkje",
-          "type": "fixed",
-          "biome": "lucht",
-          "lat": 52.935241,
-          "lng": 5.035408,
-          "radius": 80,
-          "rarity": "common",
-          "description": "Een pluizig luchtvriendje dat graag boven de haven bij Den Oever dobbert.",
-          "image": "assets/sammeltjes/wieringer-wolkje.png",
-          "behavior": "shy",
-          "speedKmh": 0,
-          "availabilityMode": "all-day",
-          "randomHoursPerDay": 6,
-          "active": true
-        },
-        {
-          "id": "dijkdraakje",
-          "name": "Dijkdraakje",
-          "type": "roaming",
-          "biome": "dijk",
-          "lat": 52.920698,
-          "lng": 4.958911,
-          "radius": 120,
-          "rarity": "rare",
-          "description": "Dit mini-draakje warmt zijn pootjes op de stenen van de oude dijk.",
-          "image": "assets/sammeltjes/dijkdraakje.png",
-          "behavior": "shy",
-          "speedKmh": 0.6,
-          "availabilityMode": "all-day",
-          "randomHoursPerDay": 6,
-          "active": true
-        },
-        {
-          "id": "kwelder-sprietje",
-          "name": "Kwelder Sprietje",
-          "type": "fixed",
-          "biome": "kwelder",
-          "lat": 52.934545,
-          "lng": 5.001774,
-          "radius": 60,
-          "rarity": "common",
-          "description": "Een dansend graswezentje dat zachtjes ritselt als de zeewind langs trekt.",
-          "image": "assets/sammeltjes/kwelder-sprietje.png",
-          "behavior": "shy",
-          "speedKmh": 0,
-          "availabilityMode": "all-day",
-          "randomHoursPerDay": 6,
-          "active": true
-        },
-        {
-          "id": "kapel-kabbeltje",
-          "name": "Kapel Kabbeltje",
-          "type": "fixed",
-          "biome": "mystiek",
-          "lat": 52.907369,
-          "lng": 4.962283,
-          "radius": 80,
-          "rarity": "legendary",
-          "description": "Een gouden fluistergeest die alleen verschijnt bij stille plekjes met oud verhaal.",
-          "image": "assets/sammeltjes/kapel-kabbeltje.png",
-          "behavior": "shy",
-          "speedKmh": 0,
-          "availabilityMode": "evening",
-          "randomHoursPerDay": 6,
-          "active": true
-        },
-        {
-          "id": "rietritter",
-          "name": "Rietritter",
-          "type": "roaming",
-          "biome": "rietland",
-          "lat": 52.9204,
-          "lng": 4.9821,
-          "radius": 290,
-          "rarity": "common",
-          "description": "Een dapper schildknaapje dat tussen de rietkragen op patrouille loopt.",
-          "image": "assets/sammeltjes/rietritter.png",
-          "behavior": "curious",
-          "speedKmh": 2.8,
-          "availabilityMode": "all-day",
-          "randomHoursPerDay": 6,
-          "active": true
-        },
-        {
-          "id": "mistmuis",
-          "name": "Mistmuis",
-          "type": "roaming",
-          "biome": "mystiek",
-          "lat": 52.898593,
-          "lng": 4.953589,
-          "radius": 110,
-          "rarity": "rare",
-          "description": "Een nieuwsgierige muis die in zachte bochten door de ochtendmist sluipt.",
-          "image": "assets/sammeltjes/mistmuis.png",
-          "behavior": "scared",
-          "speedKmh": 2.4,
-          "availabilityMode": "night",
-          "randomHoursPerDay": 6,
-          "active": true
-        },
-        {
-          "id": "akkervonk",
-          "name": "Akkervonk",
-          "type": "roaming",
-          "biome": "veld",
-          "lat": 52.91076,
-          "lng": 5.009551,
-          "radius": 130,
-          "rarity": "common",
-          "description": "Een knetterend lichtje dat graag langs akkers huppelt als de zon laag staat.",
-          "image": "assets/sammeltjes/akkervonk.png",
-          "behavior": "curious",
-          "speedKmh": 3.4,
-          "availabilityMode": "evening",
-          "randomHoursPerDay": 6,
-          "active": true
-        },
-        {
-          "id": "schelpenwachter",
-          "name": "Schelpenwachter",
-          "type": "roaming",
-          "biome": "kust",
-          "lat": 52.92915,
-          "lng": 5.038584,
-          "radius": 270,
-          "rarity": "rare",
-          "description": "Een rustige strandwachter die schelpen telt en altijd een stap vooruit denkt.",
-          "image": "assets/sammeltjes/schelpenwachter.png",
-          "behavior": "shy",
-          "speedKmh": 1.8,
-          "availabilityMode": "all-day",
-          "randomHoursPerDay": 6,
-          "active": true
-        },
-        {
-          "id": "stormster",
-          "name": "Stormster",
-          "type": "wild",
-          "biome": "lucht",
-          "lat": 52.9038,
-          "lng": 4.9514,
-          "radius": 420,
-          "rarity": "rare",
-          "description": "Een vallende ster die ergens op Wieringen neerstrijkt zodra de lucht onrustig voelt.",
-          "image": "assets/sammeltjes/stormster.png",
-          "behavior": "scared",
-          "speedKmh": 4.8,
-          "availabilityMode": "random-hours",
-          "randomHoursPerDay": 7,
-          "active": true
-        },
-        {
-          "id": "goudglim",
-          "name": "Goudglim",
-          "type": "wild",
-          "biome": "mystiek",
-          "lat": 52.8972,
-          "lng": 4.9738,
-          "radius": 380,
-          "rarity": "legendary",
-          "description": "Deze zeldzame schitteraar laat maar heel even een gouden spoor over het eiland achter.",
-          "image": "assets/sammeltjes/goudglim.png",
-          "behavior": "shy",
-          "speedKmh": 3.2,
-          "availabilityMode": "random-hours",
-          "randomHoursPerDay": 4,
-          "active": true
-        },
-        {
-          "id": "schapenherdertje",
-          "name": "Schapenherdertje",
-          "type": "roaming",
-          "biome": "schaapsveld",
-          "lat": 52.921578,
-          "lng": 4.995134,
-          "radius": 290,
-          "rarity": "common",
-          "description": "Een klein Sammeltje dat altijd tussen de Wieringer schapen loopt en ze zachtjes bijeen houdt.",
-          "image": "assets/sammeltjes/schapenherdertje.png",
-          "behavior": "curious",
-          "speedKmh": 1.7,
-          "availabilityMode": "all-day",
-          "randomHoursPerDay": 6,
-          "active": true
-        },
-        {
-          "id": "boer-bietje",
-          "name": "Boer Bietje",
-          "type": "roaming",
-          "biome": "akker",
-          "lat": 52.9109,
-          "lng": 4.9835,
-          "radius": 120,
-          "rarity": "common",
-          "description": "Een vrolijk veld-Sammeltje dat dol is op akkers, aardappels en bieten.",
-          "image": "assets/sammeltjes/boer-bietje.png",
-          "behavior": "curious",
-          "speedKmh": 2.1,
-          "availabilityMode": "all-day",
-          "randomHoursPerDay": 6,
-          "active": true
-        },
-        {
-          "id": "molenmaatje",
-          "name": "Molenmaatje",
-          "type": "fixed",
-          "biome": "molen",
-          "lat": 52.934371,
-          "lng": 5.026314,
-          "radius": 55,
-          "rarity": "rare",
-          "description": "Een windvriend Sammeltje dat bij oude molens woont en met de wieken meedraait.",
-          "image": "assets/sammeltjes/molenmaatje.png",
-          "behavior": "shy",
-          "speedKmh": 0,
-          "availabilityMode": "all-day",
-          "randomHoursPerDay": 6,
-          "active": true
-        },
-        {
-          "id": "nettenvissertje",
-          "name": "Nettenvissertje",
-          "type": "roaming",
-          "biome": "haven",
-          "lat": 52.9317,
-          "lng": 5.0152,
-          "radius": 385,
-          "rarity": "common",
-          "description": "Een kust-Sammeltje dat kleine visnetjes verzamelt en altijd naar de zee kijkt.",
-          "image": "assets/sammeltjes/nettenvissertje.png",
-          "behavior": "shy",
-          "speedKmh": 1.6,
-          "availabilityMode": "evening",
-          "randomHoursPerDay": 6,
-          "active": true
-        },
-        {
-          "id": "opa-duinbaard",
-          "name": "Opa Duinbaard",
-          "type": "fixed",
-          "biome": "duin",
-          "lat": 52.890978,
-          "lng": 4.912743,
-          "radius": 270,
-          "rarity": "rare",
-          "description": "Een oud wijs Sammeltje met een lange baard van duingras en zand.",
-          "image": "assets/sammeltjes/opa-duinbaard.png",
-          "behavior": "shy",
-          "speedKmh": 0,
-          "availabilityMode": "evening",
-          "randomHoursPerDay": 6,
-          "active": true
-        },
-        {
-          "id": "oma-wierwortel",
-          "name": "Oma Wierwortel",
-          "type": "roaming",
-          "biome": "kruidentuin",
-          "lat": 52.910087,
-          "lng": 4.970451,
-          "radius": 169,
-          "rarity": "common",
-          "description": "Een vriendelijk oud Sammeltje dat kruiden en wortels verzamelt.",
-          "image": "assets/sammeltjes/oma-wierwortel.png",
-          "behavior": "curious",
-          "speedKmh": 1.7,
-          "availabilityMode": "all-day",
-          "randomHoursPerDay": 6,
-          "active": true
-        },
-        {
-          "id": "dijkwacht",
-          "name": "Dijkwacht",
-          "type": "roaming",
-          "biome": "dijk",
-          "lat": 52.928106,
-          "lng": 4.96511,
-          "radius": 150,
-          "rarity": "rare",
-          "description": "Een klein waakzaam Sammeltje dat 's nachts over de dijken loopt.",
-          "image": "assets/sammeltjes/dijkwacht.png",
-          "behavior": "scared",
-          "speedKmh": 2.6,
-          "availabilityMode": "night",
-          "randomHoursPerDay": 6,
-          "active": true
-        },
-        {
-          "id": "havenpluimpje",
-          "name": "Havenpluimpje",
-          "type": "roaming",
-          "biome": "haven",
-          "lat": 52.938722,
-          "lng": 5.032376,
-          "radius": 95,
-          "rarity": "common",
-          "description": "Een luchtig Sammeltje dat rond de havenpalen en scheepstouwen zweeft.",
-          "image": "assets/sammeltjes/havenpluimpje.png",
-          "behavior": "curious",
-          "speedKmh": 2.3,
-          "availabilityMode": "all-day",
-          "randomHoursPerDay": 6,
-          "active": true
-        },
-        {
-          "id": "mosselmop",
-          "name": "Mosselmop",
-          "type": "roaming",
-          "biome": "kust",
-          "lat": 52.9335,
-          "lng": 5.0084,
-          "radius": 90,
-          "rarity": "common",
-          "description": "Een grappig Sammeltje dat altijd met schelpen en mossels speelt.",
-          "image": "assets/sammeltjes/mosselmop.png",
-          "behavior": "shy",
-          "speedKmh": 1.9,
-          "availabilityMode": "all-day",
-          "randomHoursPerDay": 6,
-          "active": true
-        },
-        {
-          "id": "waddenwriemel",
-          "name": "Waddenwriemel",
-          "type": "roaming",
-          "biome": "wad",
-          "lat": 52.931461,
-          "lng": 4.982468,
-          "radius": 130,
-          "rarity": "rare",
-          "description": "Een nieuwsgierig Sammeltje dat door het wad kruipt en glinsteringen zoekt.",
-          "image": "assets/sammeltjes/waddenwriemel.png",
-          "behavior": "curious",
-          "speedKmh": 2.8,
-          "availabilityMode": "random-hours",
-          "randomHoursPerDay": 7,
-          "active": true
-        }
-      ]
-    </script>
-    <script
-      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-      crossorigin=""
-    ></script>
-    <script src="app.js?v=20260327a"></script>
+    <script src="vendor/leaflet/leaflet.js?v=1.9.4"></script>
+    <script src="shared-config.js?v=20260711"></script>
+    <script src="app.js?v=20260711"></script>
     <script>
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {

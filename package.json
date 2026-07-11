@@ -1,0 +1,25 @@
+{
+  "name": "sammeltjes-van-wieringen",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "npm run prepare:assets && npm run build:css",
+    "prepare:assets": "node scripts/prepare-assets.mjs",
+    "update:boundary": "node scripts/update-boundary.mjs",
+    "build:css": "tailwindcss -i tailwind.input.css -o tailwind.generated.css --minify",
+    "start": "python dev-server.py",
+    "validate": "node scripts/validate-project.mjs",
+    "check": "npm run build && npm run validate && npm run test:e2e",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:ui": "playwright test --ui"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.61.1",
+    "sharp": "^0.35.3",
+    "tailwindcss": "^3.4.19"
+  },
+  "dependencies": {
+    "leaflet": "^1.9.4"
+  }
+}
