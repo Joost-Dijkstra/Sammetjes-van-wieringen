@@ -52,6 +52,20 @@ body {
   position: absolute;
 }
 
+.map-center-button {
+  position: absolute;
+  top: var(--map-control-top, 148px);
+  right: 1rem;
+  z-index: 855;
+  gap: 0.45rem;
+  background: linear-gradient(180deg, rgba(250, 239, 211, 0.98), rgba(225, 194, 144, 0.98));
+}
+
+.map-center-button span {
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
 #mini-radar-panel {
   width: min(16rem, calc(100vw - 2rem));
 }
@@ -674,6 +688,10 @@ body {
 
   .game-mini-radar {
     left: 0.65rem !important;
+  }
+
+  .map-center-button {
+    right: 0.65rem;
   }
 
   .game-view-panel {

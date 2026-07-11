@@ -1,4 +1,4 @@
-const CACHE_VERSION = "v5";
+const CACHE_VERSION = "v6";
 const SHELL_CACHE = `sammeltjes-shell-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `sammeltjes-runtime-${CACHE_VERSION}`;
 const TILE_CACHE = `sammeltjes-tiles-${CACHE_VERSION}`;
@@ -13,9 +13,9 @@ const SHELL_ASSETS = [
   "./vendor/leaflet/images/marker-icon.png",
   "./vendor/leaflet/images/marker-icon-2x.png",
   "./vendor/leaflet/images/marker-shadow.png",
-  "./style.css?v=20260711",
+  "./style.css?v=20260711b",
   "./shared-config.js?v=20260711",
-  "./app.js?v=20260711",
+  "./app.js?v=20260711b",
   "./manifest.webmanifest",
   "./assets/icons/icon-192.png",
   "./assets/icons/icon-512.png",

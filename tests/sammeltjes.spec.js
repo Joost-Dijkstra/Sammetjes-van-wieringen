@@ -246,17 +246,22 @@ test("Test 6 - Mobiele layout blijft vrij en bedienbaar", async ({ page }) => {
   await expect(scan).toHaveClass(/is-collapsed/);
 
   const navigation = page.locator("nav");
-  const [hudBox, radarBox, scanBox, navigationBox] = await Promise.all([
+  const recenter = page.getByTestId("recenter-btn");
+  const [hudBox, radarBox, scanBox, navigationBox, recenterBox] = await Promise.all([
     hud.boundingBox(),
     miniRadar.boundingBox(),
     scan.boundingBox(),
-    navigation.boundingBox()
+    navigation.boundingBox(),
+    recenter.boundingBox()
   ]);
   expect(hudBox).toBeTruthy();
   expect(radarBox).toBeTruthy();
   expect(scanBox).toBeTruthy();
   expect(navigationBox).toBeTruthy();
+  expect(recenterBox).toBeTruthy();
   expect(radarBox.y).toBeGreaterThanOrEqual(hudBox.y + hudBox.height);
+  expect(recenterBox.y).toBeGreaterThanOrEqual(radarBox.y + radarBox.height);
+  expect(recenterBox.y + recenterBox.height).toBeLessThan(scanBox.y);
   expect(scanBox.y).toBeGreaterThan(hudBox.y + hudBox.height);
   expect(scanBox.y + scanBox.height).toBeLessThanOrEqual(navigationBox.y + 2);
 
@@ -282,4 +287,29 @@ test("Test 7 - Geinstalleerde app opent offline", async ({ browser, baseURL }) =
   await expect(page.locator("#terrain-status")).toContainText("offline");
   expect(errors, errors.join("\n")).toEqual([]);
   await context.close();
+});
+
+test("Test 8 - GPS verplaatst de kaart niet automatisch", async ({ page }) => {
+  const errors = collectClientErrors(page, "manual-recenter");
+  await prepareBrowserState(page);
+  await page.goto("/index.html?e2e=1");
+  await waitForGameApi(page);
+
+  const result = await page.evaluate(() => {
+    const api = window.__SAMMELTJES_TEST_API__;
+    const before = api.setMapCenter(52.9, 4.95, 14);
+    api.setPlayerPosition(52.916, 5.03);
+    return { before, afterGps: api.getMapCenter() };
+  });
+  expect(result.afterGps.lat).toBeCloseTo(result.before.lat, 5);
+  expect(result.afterGps.lng).toBeCloseTo(result.before.lng, 5);
+
+  await page.getByTestId("recenter-btn").click();
+  await page.waitForFunction(() => {
+    const center = window.__SAMMELTJES_TEST_API__.getMapCenter();
+    return Math.abs(center.lat - 52.916) < 0.0002 && Math.abs(center.lng - 5.03) < 0.0002;
+  });
+  const centered = await page.evaluate(() => window.__SAMMELTJES_TEST_API__.getMapCenter());
+  expect(centered.zoom).toBe(16);
+  expect(errors, errors.join("\n")).toEqual([]);
 });

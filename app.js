@@ -45,7 +45,6 @@ const state = {
   },
   playerPosition: null,
   hasGpsLock: false,
-  hasCenteredMap: false,
   demoMode: false,
   showAllMode: false,
   lastKnownGpsPosition: null,
@@ -133,6 +132,7 @@ function cacheDom() {
   ui.bookDetailType = document.getElementById("book-detail-type");
   ui.bookDetailDescription = document.getElementById("book-detail-description");
   ui.navButtons = Array.from(document.querySelectorAll("[data-view]"));
+  ui.recenterButton = document.getElementById("recenter-btn");
   ui.hudPanel = document.getElementById("hud-panel");
   ui.miniRadarPanelToggle = document.getElementById("toggle-mini-radar-panel");
   ui.hudPanelToggle = document.getElementById("toggle-hud-panel");
@@ -146,16 +146,7 @@ function bindUi() {
   ui.toggleAllButton.addEventListener("click", toggleShowAllMode);
   ui.demoToggleButton.addEventListener("click", toggleDemoMode);
 
-  document.getElementById("recenter-btn").addEventListener("click", () => {
-    if (!state.playerPosition) {
-      return;
-    }
-
-    const focusPosition =
-      !state.demoMode && state.lastKnownGpsPosition ? state.lastKnownGpsPosition : state.playerPosition;
-
-    state.map.setView([focusPosition.lat, focusPosition.lng], 16, { animate: true });
-  });
+  ui.recenterButton.addEventListener("click", centerMapOnPlayer);
 
   document.getElementById("open-radar-btn").addEventListener("click", () => switchView("radar"));
   document.getElementById("close-radar-btn").addEventListener("click", () => switchView("map"));
@@ -248,6 +239,11 @@ function setPanelCollapsed(key, panel, button, collapsed, persist = true) {
 function updateOverlayPositions() {
   const hudBottom = ui.hudPanel?.getBoundingClientRect().bottom || 126;
   document.documentElement.style.setProperty("--hud-clearance", `${Math.ceil(hudBottom + 10)}px`);
+  const radarBottom = ui.miniRadarPanel?.getBoundingClientRect().bottom || hudBottom;
+  const controlTop = window.matchMedia("(max-width: 767px)").matches
+    ? Math.max(hudBottom, radarBottom) + 10
+    : hudBottom + 10;
+  document.documentElement.style.setProperty("--map-control-top", `${Math.ceil(controlTop)}px`);
 }
 
 function initMap() {
@@ -438,16 +434,18 @@ function setPlayerPosition(latlng, options = {}) {
   state.activationCircle.setLatLng(nextPosition);
   state.radarCircle.setLatLng(nextPosition);
 
-  if (!state.hasCenteredMap || options.source === "gps") {
-    state.map.setView([nextPosition.lat, nextPosition.lng], state.hasCenteredMap ? state.map.getZoom() : 15, {
-      animate: state.hasCenteredMap
-    });
-    state.hasCenteredMap = true;
-  }
-
   if (options.source !== "fallback") {
     void maybeRefreshTerrain();
   }
+}
+
+function centerMapOnPlayer() {
+  if (!state.playerPosition) {
+    showToast("Je locatie is nog niet beschikbaar.");
+    return;
+  }
+
+  state.map.setView([state.playerPosition.lat, state.playerPosition.lng], 16, { animate: true });
 }
 
 function toggleDemoMode() {
@@ -1087,6 +1085,7 @@ function switchView(view) {
   ui.radarPanel.classList.toggle("hidden", view !== "radar");
   ui.miniRadarPanel.classList.toggle("hidden", view !== "map");
   ui.scanPanel.classList.toggle("hidden", view !== "map");
+  ui.recenterButton.classList.toggle("hidden", view !== "map");
 }
 
 function updateCounters() {
@@ -1694,6 +1693,14 @@ function installTestApi() {
       setPlayerPosition({ lat, lng }, { source: "demo", silentToast: true });
       simulationTick(true);
       return { ...state.playerPosition };
+    },
+    setMapCenter(lat, lng, zoom = 14) {
+      state.map.setView([lat, lng], zoom, { animate: false });
+      return this.getMapCenter();
+    },
+    getMapCenter() {
+      const center = state.map.getCenter();
+      return { lat: center.lat, lng: center.lng, zoom: state.map.getZoom() };
     },
     async refreshData() {
       await refreshSammeltjesData({ silent: true });
