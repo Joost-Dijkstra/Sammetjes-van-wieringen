@@ -7,9 +7,11 @@
     "prepare:assets": "node scripts/prepare-assets.mjs",
     "update:boundary": "node scripts/update-boundary.mjs",
     "build:css": "tailwindcss -i tailwind.input.css -o tailwind.generated.css --minify",
-    "start": "python dev-server.py",
+    "start": "node scripts/start-server.cjs",
+    "test:rules": "node --test tests/rules.test.cjs",
+    "test:server": "node scripts/start-server.cjs --python -m unittest discover -s tests -p test_server.py -v",
     "validate": "node scripts/validate-project.mjs",
-    "check": "npm run build && npm run validate && npm run test:e2e",
+    "check": "npm run build && npm run validate && npm run test:rules && npm run test:server && npm run test:e2e",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:ui": "playwright test --ui"

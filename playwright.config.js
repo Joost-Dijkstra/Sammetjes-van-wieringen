@@ -2,6 +2,8 @@ const { defineConfig, devices } = require("@playwright/test");
 
 module.exports = defineConfig({
   testDir: "./tests",
+  testMatch: "**/*.spec.js",
+  globalTeardown: require.resolve("./tests/shutdown-server.cjs"),
   timeout: 60000,
   expect: {
     timeout: 10000
@@ -10,10 +12,11 @@ module.exports = defineConfig({
   workers: 1,
   reporter: [["list"], ["html", { open: "never" }]],
   use: {
+    channel: process.env.PLAYWRIGHT_CHANNEL || undefined,
     baseURL: "http://127.0.0.1:4174",
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
-    video: "retain-on-failure",
+    video: process.env.PLAYWRIGHT_VIDEO === "1" ? "retain-on-failure" : "off",
     serviceWorkers: "block"
   },
   projects: [
@@ -25,7 +28,7 @@ module.exports = defineConfig({
     }
   ],
   webServer: {
-    command: "python dev-server.py --test --port 4174",
+    command: "node scripts/start-server.cjs --test --port 4174",
     url: "http://127.0.0.1:4174",
     reuseExistingServer: false,
     timeout: 120000

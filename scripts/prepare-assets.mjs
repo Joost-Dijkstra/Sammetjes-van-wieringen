@@ -1,4 +1,4 @@
-import { cp, mkdir, readFile, readdir, writeFile } from "node:fs/promises";
+import { cp, mkdir, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import sharp from "sharp";
@@ -34,14 +34,6 @@ for (const fileName of pngFiles) {
       .toFile(path.join(thumbDir, `${baseName}.webp`))
   ]);
 }
-
-const dataPath = path.join(root, "data", "sammeltjes.json");
-const records = JSON.parse(await readFile(dataPath, "utf8"));
-for (const record of records) {
-  record.image = `assets/sammeltjes-webp/full/${record.id}.webp`;
-  record.thumbnail = `assets/sammeltjes-webp/thumbs/${record.id}.webp`;
-}
-await writeFile(dataPath, `${JSON.stringify(records, null, 2)}\n`, "utf8");
 
 await cp(path.join(root, "node_modules", "leaflet", "dist", "leaflet.css"), path.join(vendorDir, "leaflet.css"));
 await cp(path.join(root, "node_modules", "leaflet", "dist", "leaflet.js"), path.join(vendorDir, "leaflet.js"));

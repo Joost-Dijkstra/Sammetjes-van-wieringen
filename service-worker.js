@@ -1,4 +1,4 @@
-const CACHE_VERSION = "v8";
+const CACHE_VERSION = "v9";
 const SHELL_CACHE = `sammeltjes-shell-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `sammeltjes-runtime-${CACHE_VERSION}`;
 const TILE_CACHE = `sammeltjes-tiles-${CACHE_VERSION}`;
@@ -13,9 +13,11 @@ const SHELL_ASSETS = [
   "./vendor/leaflet/images/marker-icon.png",
   "./vendor/leaflet/images/marker-icon-2x.png",
   "./vendor/leaflet/images/marker-shadow.png",
-  "./style.css?v=20260711d",
+  "./style.css?v=20260915",
   "./shared-config.js?v=20260711c",
-  "./app.js?v=20260711d",
+  "./game-rules.js?v=20260915",
+  "./terrain.js?v=20260915",
+  "./app.js?v=20260915",
   "./manifest.webmanifest",
   "./assets/icons/icon-192.png",
   "./assets/icons/icon-512.png",
@@ -33,7 +35,8 @@ self.addEventListener("activate", (event) => {
       .then((keys) =>
         Promise.all(
           keys.map((key) =>
-            [SHELL_CACHE, RUNTIME_CACHE, TILE_CACHE].includes(key) ? Promise.resolve() : caches.delete(key)
+            key.startsWith("sammeltjes-") && ![SHELL_CACHE, RUNTIME_CACHE, TILE_CACHE].includes(key)
+              ? caches.delete(key) : Promise.resolve()
           )
         )
       )
@@ -55,6 +58,7 @@ self.addEventListener("fetch", (event) => {
   if (url.origin !== self.location.origin) {
     return;
   }
+  if (url.pathname.includes("/api/") || /\/admin\.(html|js|css)$/.test(url.pathname)) return;
   if (request.mode === "navigate") {
     event.respondWith(networkFirst(request, "./index.html"));
     return;
@@ -101,7 +105,7 @@ async function networkFirst(request, fallbackUrl = null) {
     }
     return response;
   } catch (error) {
-    return (await cache.match(request)) || (await caches.match(request)) || (fallbackUrl && caches.match(fallbackUrl));
+    return (await cache.match(request)) || (await caches.match(request)) || (fallbackUrl && await caches.match(fallbackUrl)) || new Response("Tijdelijk niet beschikbaar", { status: 503 });
   }
 }
 
@@ -126,7 +130,7 @@ async function staleWhileRevalidate(request) {
       await cache.put(request, response.clone());
     }
     return response;
-  });
+  }).catch(() => cached || new Response("Offline", { status: 503 }));
   return cached || network;
 }
 

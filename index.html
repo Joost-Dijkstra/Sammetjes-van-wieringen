@@ -21,7 +21,7 @@
     />
     <link rel="stylesheet" href="tailwind.generated.css?v=20260711" />
     <link rel="stylesheet" href="vendor/leaflet/leaflet.css?v=1.9.4" />
-    <link rel="stylesheet" href="style.css?v=20260711d" />
+    <link rel="stylesheet" href="style.css?v=20260915" />
   </head>
   <body class="fantasy-ui antialiased">
     <div id="app" class="relative min-h-screen overflow-hidden" data-testid="game-app">
@@ -32,7 +32,7 @@
         <div id="hud-panel" class="pointer-events-auto mx-auto max-w-md soft-panel collapsible-panel" data-testid="hud-panel">
           <div class="panel-header-row">
             <div>
-              <p class="text-[11px] uppercase tracking-[0.35em] text-emerald-700/80">Locatiegame</p>
+              <p class="text-[11px] uppercase tracking-[0.35em] text-emerald-700/80">Een eiland vol vriendjes</p>
               <h1 class="title-font text-2xl text-slate-800">Sammeltjes van Wieringen</h1>
             </div>
             <button
@@ -53,14 +53,15 @@
                   Zoekt je GPS... tik op de kaart voor demo-modus als dat nodig is.
                 </p>
               </div>
-              <div class="flex shrink-0 flex-col gap-2">
+              <details id="local-test-tools" hidden class="local-test-tools">
+                <summary>Thuis uitproberen</summary>
                 <button id="toggle-all-btn" class="soft-button soft-button--small" type="button" data-testid="toggle-all-btn">
                   Toon alles
                 </button>
                 <button id="demo-toggle-btn" class="soft-button soft-button--small" type="button" data-testid="demo-toggle-btn">
                   Demo besturen
                 </button>
-              </div>
+              </details>
             </div>
 
             <div class="mt-3 flex flex-wrap gap-2 text-xs">
@@ -78,9 +79,7 @@
               </span>
             </div>
 
-            <p id="demo-hint" class="mt-3 text-xs text-slate-500">
-              Thuis testen: zet demo besturen aan en gebruik de pijltjestoetsen of tik op de kaart.
-            </p>
+            <p class="mt-3 text-xs text-slate-500">Loop op je gemak. Je vriendjes wachten op een rustige kennismaking.</p>
           </div>
         </div>
       </header>
@@ -156,6 +155,12 @@
         <div id="scan-panel-body" class="panel-collapse-body">
           <div id="scan-list" class="mt-3 max-h-[168px] space-y-2 overflow-y-auto pr-1"></div>
         </div>
+      </section>
+
+      <section id="nearby-panel" class="nearby-panel" aria-label="Vriendjes in de buurt">
+        <img id="nearby-portrait" alt="" hidden />
+        <div class="nearby-copy"><span class="nearby-eyebrow">Onderweg op Wieringen</span><p id="nearby-message" role="status">Je wandeling begint zodra je locatie bekend is.</p></div>
+        <button id="encounter-btn" type="button" class="soft-button soft-button--primary" data-testid="encounter-btn" hidden>Kennismaken</button>
       </section>
 
       <button
@@ -244,13 +249,13 @@
             &#10005;
           </button>
 
-          <p class="text-[11px] uppercase tracking-[0.3em] text-amber-600/80">Nieuw Sammeltje ontdekt!</p>
+          <p id="discovery-eyebrow" class="text-[11px] uppercase tracking-[0.3em] text-amber-600/80">Een nieuwe ontmoeting</p>
           <h2 id="discovery-name" class="title-font mt-1 text-3xl text-slate-800"></h2>
 
           <div class="mt-4 overflow-hidden rounded-[28px] border border-white/70 bg-emerald-50/70 p-3 shadow-inner">
             <img
               id="discovery-image"
-              class="h-48 w-full rounded-[22px] object-cover"
+              class="encounter-image w-full rounded-[22px]"
               src=""
               alt="Sammeltje illustratie"
             />
@@ -299,6 +304,7 @@
           </div>
 
           <p id="book-detail-description" class="mt-4 text-sm leading-6 text-slate-600"></p>
+          <p id="book-detail-date" class="book-find-date"></p>
         </div>
       </div>
 
@@ -321,7 +327,9 @@
     </div>
     <script src="vendor/leaflet/leaflet.js?v=1.9.4"></script>
     <script src="shared-config.js?v=20260711c"></script>
-    <script src="app.js?v=20260711d"></script>
+    <script src="game-rules.js?v=20260915"></script>
+    <script src="terrain.js?v=20260915"></script>
+    <script src="app.js?v=20260915"></script>
     <script>
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {

@@ -3,6 +3,7 @@ test-results/
 playwright-report/
 output/
 node_modules/
+.backups/
 *.pyc
 *.pyo
 Thumbs.db

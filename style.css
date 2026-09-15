@@ -73,8 +73,9 @@ body {
 .leaflet-container {
   background: #d7c097;
   font: inherit;
-  filter: sepia(0.42) saturate(0.8) hue-rotate(-12deg) contrast(0.96);
 }
+
+.leaflet-tile-pane { filter: sepia(0.42) saturate(0.8) hue-rotate(-12deg) contrast(0.96); }
 
 .leaflet-pane.island-mask-pane,
 .leaflet-pane.island-coast-pane {
@@ -95,10 +96,11 @@ body {
 }
 
 .leaflet-control-zoom {
-  margin-bottom: 112px !important;
+  margin-bottom: calc(222px + env(safe-area-inset-bottom)) !important;
 }
 
 .leaflet-control-attribution {
+  font: 10px/14px Georgia, serif;
   border-radius: 14px 0 0 0;
   border-top: 1px solid var(--border);
   border-left: 1px solid var(--border);
@@ -610,7 +612,7 @@ body {
 .toast {
   position: absolute;
   left: 50%;
-  bottom: 102px;
+  bottom: calc(225px + env(safe-area-inset-bottom));
   z-index: 1050;
   min-width: 220px;
   max-width: min(90vw, 360px);
@@ -725,4 +727,67 @@ body {
   .nav-button span:last-child {
     display: none;
   }
+}
+
+/* The walk has one compact contact card; detailed radar lives in its own view. */
+#app { height: 100dvh; min-height: 100dvh; }
+#map { height: 100%; width: 100%; }
+[hidden] { display: none !important; }
+#mini-radar-panel, #scan-panel { display: none !important; }
+#hud-panel { max-width: 440px; }
+#hud-panel-body .status-chip { font-size: 0.76rem; }
+#hud-panel-body .status-chip:last-child { display: none; }
+.local-test-tools { min-width: 126px; font-size: 0.8rem; }
+.local-test-tools summary { cursor: pointer; margin-bottom: 8px; }
+.local-test-tools button { margin-bottom: 8px; font-size: 0.7rem; }
+.nearby-panel {
+  position: absolute; z-index: 860; left: 16px; right: 16px;
+  bottom: calc(118px + env(safe-area-inset-bottom)); margin: auto; max-width: 440px;
+  display: flex; align-items: center; gap: 12px; padding: 14px 16px;
+  border: 1px solid rgba(106,69,36,.28); border-radius: 22px;
+  background: linear-gradient(135deg, #fbf2dcf5, #ebd8b5f5);
+  box-shadow: 0 5px 24px #4b382723;
+}
+.nearby-panel img { width: 48px; height: 58px; object-fit: contain; border-radius: 14px; }
+.nearby-copy { min-width: 0; flex: 1; }
+.nearby-eyebrow { font-size: .6rem; text-transform: uppercase; letter-spacing: .17em; color: #806443; }
+.nearby-copy p { margin: 4px 0 0; font-size: .87rem; line-height: 1.4; }
+.nearby-panel button { padding: 10px 12px; font-size: .65rem; min-height: 44px; }
+.companion-marker { background: none; border: none; transition: transform 200ms linear; }
+.companion-portrait {
+  display: block; position: relative; width: 52px; height: 58px; padding: 3px;
+  border: 2px solid var(--common); border-radius: 45% 45% 40% 40%; background: #fff7e6;
+  box-shadow: 0 6px 12px #45372244; animation: companionBreathe 4s ease-in-out infinite;
+}
+.companion-portrait::after { content: ""; position: absolute; width: 12px; height: 5px; border-radius: 50%; background: #58432144; bottom: -8px; left: 18px; }
+.companion-portrait--rare { border-color: var(--rare); }
+.companion-portrait--legendary { border-color: var(--legendary); box-shadow: 0 0 15px #e9b84d88; }
+.companion-portrait img { width: 100%; height: 100%; border-radius: inherit; object-fit: cover; }
+.friend-badge { position: absolute; right: -5px; bottom: -3px; width: 19px; height: 19px; border-radius: 50%; background: #4d744c; color: #fff; font: bold 12px/19px Georgia,serif; text-align: center; border: 1px solid #fff8e4; }
+.is-walking .companion-portrait { animation: companionWalk .7s ease-in-out infinite alternate; }
+.mystery-signal { display: block; margin: 17px; width: 19px; height: 19px; border-radius: 50%; background: #e7ca83; border: 1px solid #a88641; color: #76531d; text-align: center; font: 13px/17px Georgia,serif; box-shadow: 0 0 14px #f4dfa5; }
+.encounter-image { height: min(38dvh, 300px); object-fit: contain; }
+.book-detail-image { height: min(43dvh, 340px); object-fit: contain; }
+.book-card img { object-fit: contain; height: 165px; background: #fff8e2; }
+.book-find-date { margin-top: 12px; font-size: .8rem; color: var(--ink-soft); font-style: italic; }
+body[data-game-view="radar"] .leaflet-control-zoom,
+body[data-game-view="book"] .leaflet-control-zoom { visibility: hidden; }
+#radar-panel > .soft-panel { overflow-y: auto; }
+.radar-shell--full { flex: 0 0 auto; }
+#discovery-modal > .soft-panel { animation: encounterReveal .4s ease-out both; }
+.nav-button { min-height: 44px; }
+.soft-panel--modal button[aria-label] { min-width: 44px; min-height: 44px; }
+@keyframes companionBreathe { 50% { transform: translateY(-2px); } }
+@keyframes companionWalk { from { transform: translateY(-1px) rotate(-3deg); } to { transform: translateY(-3px) rotate(3deg); } }
+@keyframes encounterReveal { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+@media (max-width: 430px) {
+  .nav-button { flex-direction: column; gap: 3px; padding: 6px 4px; font-size: .61rem; letter-spacing: .01em; }
+  .nav-button span:last-child { display: block; }
+  .nearby-panel { left: 10px; right: 10px; padding: 12px; gap: 9px; }
+  .nearby-eyebrow { font-size: .55rem; }
+  .nearby-copy p { font-size: .79rem; }
+  .nearby-panel img { width: 37px; height: 46px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }

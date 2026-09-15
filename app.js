@@ -1,4 +1,5 @@
 const SHARED_CONFIG = window.SAMMELTJES_SHARED_CONFIG;
+const Rules = window.SammeltjesRules;
 
 if (!SHARED_CONFIG) {
   throw new Error("shared-config.js ontbreekt of is niet geladen.");
@@ -66,6 +67,11 @@ const state = {
   toastTimer: null,
   isRefreshingData: false,
   lastDataVersion: localStorage.getItem(DATA_VERSION_KEY) || null,
+  dataFingerprint: "",
+  foundDates: loadFoundDates(),
+  nearEntityId: null,
+  gpsAccuracy: Infinity,
+  gpsTimestamp: 0,
   collapsedPanels: loadCollapsedPanelState()
 };
 
@@ -89,6 +95,7 @@ async function init() {
     return;
   }
   state.entities = createEntities(data);
+  state.dataFingerprint = JSON.stringify(data);
   renderBook();
   renderScanList();
   updateCounters();
@@ -145,9 +152,18 @@ function cacheDom() {
   ui.hudPanelBody = document.getElementById("hud-panel-body");
   ui.miniRadarPanelBody = document.getElementById("mini-radar-panel-body");
   ui.scanPanelBody = document.getElementById("scan-panel-body");
+  ui.encounterButton = document.getElementById("encounter-btn");
+  ui.nearbyMessage = document.getElementById("nearby-message");
+  ui.nearbyPortrait = document.getElementById("nearby-portrait");
 }
 
 function bindUi() {
+  const localTools = ["localhost", "127.0.0.1", "::1"].includes(location.hostname);
+  document.getElementById("local-test-tools").hidden = !localTools;
+  ui.encounterButton.addEventListener("click", () => {
+    const entity = state.entities.find((item) => item.id === state.nearEntityId);
+    if (canMeet(entity)) enqueueDiscovery(entity);
+  });
   ui.toggleAllButton.addEventListener("click", toggleShowAllMode);
   ui.demoToggleButton.addEventListener("click", toggleDemoMode);
 
@@ -181,6 +197,7 @@ function bindUi() {
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden) {
       void refreshSammeltjesData({ silent: true });
+      simulationTick(true);
     }
   });
   window.addEventListener("storage", (event) => {
@@ -304,7 +321,7 @@ function initMap() {
   }).addTo(state.map);
 
   state.map.on("click", (event) => {
-    if (state.hasGpsLock && !state.demoMode) {
+    if (!state.demoMode) {
       return;
     }
 
@@ -429,7 +446,10 @@ async function loadSammeltjesData() {
     throw new Error(`Kon JSON niet laden (${response.status}).`);
   }
 
-  return response.json();
+  const data = await response.json();
+  const errors = Rules.validate(data, CONFIG.WIERINGEN_POLYGON);
+  if (errors.length) throw new Error(errors[0]);
+  return data;
 }
 
 async function refreshSammeltjesData(options = {}) {
@@ -441,31 +461,36 @@ async function refreshSammeltjesData(options = {}) {
 
   try {
     const data = await loadSammeltjesData();
+    const fingerprint = JSON.stringify(data);
+    if (fingerprint === state.dataFingerprint) return;
     replaceEntities(data);
+    state.dataFingerprint = fingerprint;
 
     if (!options.silent) {
       showToast("Sammeltjesdata ververst vanuit de admin.");
     }
+  } catch (error) {
+    if (!options.silent) showToast("Verversen lukte niet. Je huidige wandeling blijft beschikbaar.");
   } finally {
     state.isRefreshingData = false;
   }
 }
 
 function replaceEntities(records) {
-  for (const entity of state.entities) {
-    hideEntityMarker(entity);
+  const old = new Map(state.entities.map((item) => [item.id, item]));
+  state.entities = records.map((record) => {
+    const previous = old.get(record.id);
+    old.delete(record.id);
+    if (previous && previous.recordFingerprint === JSON.stringify(record)) return previous;
+    if (previous) hideEntityMarker(previous);
+    return createEntities([record])[0];
+  });
+  old.forEach(hideEntityMarker);
+  if (state.currentDiscoveryId && !state.entities.some((item) => item.id === state.currentDiscoveryId && item.enabled)) dismissDiscovery(false);
+  if (state.currentBookDetailId) {
+    const current = state.entities.find((item) => item.id === state.currentBookDetailId);
+    if (current) openBookDetail(current); else closeBookDetail();
   }
-
-  state.discoveryQueue = [];
-  state.pendingDiscoveries.clear();
-  state.currentDiscoveryId = null;
-  state.currentBookDetailId = null;
-  ui.discoveryModal.classList.add("hidden");
-  ui.discoveryModal.classList.remove("flex");
-  ui.bookDetailModal.classList.add("hidden");
-  ui.bookDetailModal.classList.remove("flex");
-
-  state.entities = createEntities(records);
   renderBook();
   renderScanList();
   renderRadar();
@@ -476,7 +501,8 @@ function replaceEntities(records) {
 function createEntities(records) {
   return records.map((record) => {
     const entity = {
-      ...record,
+      ...Rules.create(record),
+      recordFingerprint: JSON.stringify(record),
       homeLat: record.lat,
       homeLng: record.lng,
       currentLat: record.lat,
@@ -497,15 +523,11 @@ function createEntities(records) {
       speedMps: kmhToMps(normalizeSpeedKmh(record.speedKmh, record.rarity)),
       availabilityMode: oneOf(
         record.availabilityMode,
-        ["all-day", "morning", "afternoon", "evening", "night", "random-hours"],
+        ["all-day", "morning", "afternoon", "evening", "night", "random-hours", "schedule"],
         "all-day"
       ),
       randomHoursPerDay: normalizeRandomHours(record.randomHoursPerDay)
     };
-
-    if (entity.type === "roaming" || entity.type === "wild") {
-      entity.target = chooseRoamingTarget(entity);
-    }
 
     return entity;
   });
@@ -520,6 +542,8 @@ function startGeolocation() {
   navigator.geolocation.watchPosition(
     (position) => {
       state.hasGpsLock = true;
+      state.gpsAccuracy = position.coords.accuracy;
+      state.gpsTimestamp = position.timestamp || Date.now();
       const nextPosition = {
         lat: position.coords.latitude,
         lng: position.coords.longitude,
@@ -535,9 +559,8 @@ function startGeolocation() {
       updateLocationStatus();
     },
     () => {
-      if (!state.hasGpsLock) {
-        updateLocationStatus();
-      }
+      state.hasGpsLock = false;
+      updateLocationStatus();
     },
     {
       enableHighAccuracy: true,
@@ -654,16 +677,27 @@ function updateLocationStatus() {
     return;
   }
 
-  ui.gpsStatus.textContent = "Geen GPS-lock. Zet demo besturen aan of tik op de kaart voor testmodus.";
+  ui.gpsStatus.textContent = "Wacht op je locatie. Geef de browser toegang tot GPS om vriendjes te ontmoeten.";
+}
+
+function hasUsablePosition() {
+  return state.demoMode || (state.hasGpsLock && state.gpsAccuracy <= 50 && Date.now() - state.gpsTimestamp < 60000);
+}
+
+function canMeet(entity) {
+  return Boolean(entity && hasUsablePosition() && entity.enabled && entity.availableNow &&
+    distanceMeters(state.playerPosition, entityPoint(entity)) <= CONFIG.DISCOVERY_RADIUS);
 }
 
 function simulationTick(forceUi = false) {
-  if (!state.playerPosition) {
+  if (!state.playerPosition || (document.hidden && !forceUi)) {
     return;
   }
 
   for (const entity of state.entities) {
-    if (!entity.enabled || entity.collected) {
+    if (!entity.enabled) {
+      entity.active = false;
+      entity.radarVisible = false;
       hideEntityMarker(entity);
       continue;
     }
@@ -671,7 +705,7 @@ function simulationTick(forceUi = false) {
     const distanceToPlayer = distanceMeters(state.playerPosition, entityPoint(entity));
     entity.isSimulated = distanceToPlayer <= CONFIG.SIMULATION_RADIUS;
     entity.distance = distanceToPlayer;
-    entity.availableNow = isEntityAvailableNow(entity);
+    entity.availableNow = Rules.available(entity);
 
     if (!entity.availableNow) {
       entity.distance = Number.POSITIVE_INFINITY;
@@ -681,214 +715,93 @@ function simulationTick(forceUi = false) {
       continue;
     }
 
-    if (entity.isSimulated && (entity.type === "roaming" || entity.type === "wild")) {
-      moveRoamingEntity(entity);
-    }
-
-    if (entity.isSimulated && entity.type === "wild" && state.terrain.ready && !entity.terrainValidated) {
-      respawnWildEntity(entity, false);
+    if (entity.isSimulated && hasUsablePosition()) {
+      Rules.step(entity, { player: state.playerPosition,
+        canOccupy: (point) => canOccupyTerrain(point, !state.terrain.ready) });
     }
 
     entity.distance = distanceMeters(state.playerPosition, entityPoint(entity));
-    entity.active = entity.distance <= CONFIG.ACTIVATION_RADIUS;
-    entity.radarVisible = entity.distance <= CONFIG.RADAR_RADIUS;
+    entity.active = hasUsablePosition() && entity.distance <= CONFIG.ACTIVATION_RADIUS;
+    entity.radarVisible = hasUsablePosition() && entity.distance <= CONFIG.RADAR_RADIUS;
 
     syncEntityMarker(entity);
 
-    if (
-      entity.distance <= CONFIG.DISCOVERY_RADIUS &&
-      !state.discovered.has(entity.id) &&
-      Date.now() > entity.discoveryCooldownUntil
-    ) {
-      enqueueDiscovery(entity);
-    }
   }
 
-  const now = Date.now();
+  const now = performance.now();
   if (forceUi || now - state.lastUiRenderAt >= CONFIG.UI_UPDATE_MS) {
     renderRadar();
     renderScanList();
     updateCounters();
+    renderEncounterPrompt();
     state.lastUiRenderAt = now;
   }
 }
 
-function moveRoamingEntity(entity) {
-  if (entity.behavior === "shy" && entity.distance <= CONFIG.RADAR_RADIUS) {
-    entity.target = null;
-    return;
-  }
-
-  if (entity.distance <= CONFIG.RADAR_RADIUS) {
-    const reactiveTarget = chooseReactiveTarget(entity);
-    if (reactiveTarget) {
-      entity.target = reactiveTarget;
-    }
-  }
-
-  if (!entity.target) {
-    entity.target = chooseRoamingTarget(entity);
-    return;
-  }
-
-  const current = entityPoint(entity);
-  const targetDistance = distanceMeters(current, entity.target);
-
-  if (targetDistance < 5) {
-    entity.target = chooseRoamingTarget(entity);
-    return;
-  }
-
-  const stepDistance = entity.speedMps * (CONFIG.ROAMING_UPDATE_MS / 1000);
-  const stepBearing = bearingDegrees(current, entity.target);
-  const nextPoint = destinationPoint(current, stepDistance, stepBearing);
-
-  const homeDistance = distanceMeters({ lat: entity.homeLat, lng: entity.homeLng }, nextPoint);
-  const allowed = canOccupyTerrain(nextPoint, !state.terrain.ready);
-
-  if (homeDistance > entity.radius || !allowed) {
-    entity.target = chooseRoamingTarget(entity);
-    return;
-  }
-
-  entity.currentLat = nextPoint.lat;
-  entity.currentLng = nextPoint.lng;
-
-  if (entity.marker) {
-    entity.marker.setLatLng(nextPoint);
-  }
-}
-
-function chooseRoamingTarget(entity) {
-  for (let attempt = 0; attempt < 30; attempt += 1) {
-    const candidate = destinationPoint(
-      { lat: entity.homeLat, lng: entity.homeLng },
-      randomBetween(entity.radius * 0.25, Math.max(entity.radius, entity.radius * 0.75)),
-      randomBetween(0, 360)
-    );
-
-    if (
-      distanceMeters({ lat: entity.homeLat, lng: entity.homeLng }, candidate) <= entity.radius &&
-      canOccupyTerrain(candidate, !state.terrain.ready)
-    ) {
-      return candidate;
-    }
-  }
-
-  return { lat: entity.homeLat, lng: entity.homeLng };
-}
-
-function chooseReactiveTarget(entity) {
-  if (!state.playerPosition || entity.type === "fixed") {
-    return null;
-  }
-
-  if (entity.behavior === "curious") {
-    return clampEntityTarget(entity, state.playerPosition);
-  }
-
-  if (entity.behavior === "scared") {
-    const awayBearing = (bearingDegrees(entityPoint(entity), state.playerPosition) + 180) % 360;
-    const awayDistance = Math.max(CONFIG.RADAR_RADIUS, entity.radius || CONFIG.ACTIVATION_RADIUS * 0.5);
-    const candidate = destinationPoint(entityPoint(entity), Math.min(awayDistance, 45), awayBearing);
-    return clampEntityTarget(entity, candidate);
-  }
-
-  return null;
-}
-
-function clampEntityTarget(entity, candidate) {
-  if (entity.type === "wild") {
-    if (pointInPolygon(candidate, CONFIG.WIERINGEN_POLYGON) && canOccupyTerrain(candidate, !state.terrain.ready)) {
-      return candidate;
-    }
-
-    return chooseRoamingTarget(entity);
-  }
-
-  const homePoint = { lat: entity.homeLat, lng: entity.homeLng };
-  if (distanceMeters(homePoint, candidate) <= entity.radius && canOccupyTerrain(candidate, !state.terrain.ready)) {
-    return candidate;
-  }
-
-  const limitedDistance = Math.max(6, Math.min(entity.radius, distanceMeters(homePoint, candidate)));
-  const limitedCandidate = destinationPoint(homePoint, limitedDistance, bearingDegrees(homePoint, candidate));
-  if (canOccupyTerrain(limitedCandidate, !state.terrain.ready)) {
-    return limitedCandidate;
-  }
-
-  return chooseRoamingTarget(entity);
-}
-
-function respawnWildEntity(entity, allowLooseTerrain) {
-  for (let attempt = 0; attempt < 80; attempt += 1) {
-    const candidate = destinationPoint(
-      { lat: entity.homeLat, lng: entity.homeLng },
-      randomBetween(0, entity.radius || 1400),
-      randomBetween(0, 360)
-    );
-
-    if (!pointInPolygon(candidate, CONFIG.WIERINGEN_POLYGON)) {
-      continue;
-    }
-
-    if (!canOccupyTerrain(candidate, allowLooseTerrain)) {
-      continue;
-    }
-
-    entity.currentLat = candidate.lat;
-    entity.currentLng = candidate.lng;
-    entity.terrainValidated = state.terrain.ready;
-
-    if (entity.marker) {
-      entity.marker.setLatLng(candidate);
-    }
-
-    return;
-  }
-
-  const fallback = randomPointInPolygon(CONFIG.WIERINGEN_POLYGON) || CONFIG.DEFAULT_CENTER;
-  entity.currentLat = fallback.lat;
-  entity.currentLng = fallback.lng;
-  entity.terrainValidated = false;
-}
 
 function syncEntityMarker(entity) {
-  const shouldShow = entity.enabled && !entity.collected && (state.showAllMode || entity.active);
+  const shouldShow = entity.enabled && (state.showAllMode || (entity.availableNow && entity.active));
 
   if (!shouldShow) {
     hideEntityMarker(entity);
     return;
   }
 
-  const style = {
-    color: getRarityColor(entity.rarity),
-    fillColor: getRarityColor(entity.rarity),
-    fillOpacity: entity.radarVisible ? 0.82 : state.showAllMode && !entity.active ? 0.2 : 0.58,
-    opacity: state.showAllMode && !entity.active ? 0.65 : 0.95,
-    radius: entity.radarVisible ? 11 : state.showAllMode && !entity.active ? 6 : 8,
-    weight: 2
-  };
+  const revealed = entity.radarVisible || state.showAllMode;
+  const appearance = `${revealed}:${entity.collected}:${entity.rarity}:${entity.thumbnail}`;
+  const label = revealed ? entity.name : "Een Sammeltje in de buurt";
 
   if (!entity.marker) {
-    entity.marker = L.circleMarker([entity.currentLat, entity.currentLng], style)
+    entity.marker = L.marker([entity.currentLat, entity.currentLng], { icon: companionIcon(entity, revealed), keyboard: true, title: label })
       .on("click", () => {
-        entity.marker?.openTooltip();
-        showToast(`${entity.name} gespot op de kaart.`);
+        if (canMeet(entity)) enqueueDiscovery(entity);
+        else showToast(revealed ? `${entity.name}: kom rustig dichterbij.` : "Een zacht signaal. Kom dichterbij om kennis te maken.");
       })
-      .bindTooltip(entity.name, {
+      .bindTooltip(label, {
         direction: "top",
         offset: [0, -10],
         opacity: 0.92
       })
       .addTo(state.map);
+    entity.markerAppearance = appearance;
     decorateEntityMarkerForTests(entity);
     return;
   }
 
   entity.marker.setLatLng([entity.currentLat, entity.currentLng]);
-  entity.marker.setStyle(style);
+  if (entity.markerAppearance !== appearance) {
+    entity.marker.setIcon(companionIcon(entity, revealed));
+    entity.marker.setTooltipContent(label);
+    entity.markerAppearance = appearance;
+  }
+  entity.marker.getElement()?.classList.toggle("is-walking", Boolean(entity.moving));
   decorateEntityMarkerForTests(entity);
+}
+
+function companionIcon(entity, revealed) {
+  return L.divIcon({ className: "companion-marker", iconSize: [52, 62], iconAnchor: [26, 52],
+    html: revealed ? `<span class="companion-portrait companion-portrait--${entity.rarity}"><img src="${escapeHtml(entity.thumbnail || entity.image)}" alt="${escapeHtml(entity.name)}" />${entity.collected ? '<span class="friend-badge" aria-label="Bekend vriendje">&#10003;</span>' : ""}</span>`
+      : '<span class="mystery-signal" aria-label="Onbekend signaal">?</span>' });
+}
+
+function renderEncounterPrompt() {
+  const nearest = state.entities.filter((item) => item.enabled && item.availableNow && item.active)
+    .sort((a, b) => a.distance - b.distance)[0];
+  state.nearEntityId = nearest?.id || null;
+  const ready = canMeet(nearest);
+  ui.encounterButton.hidden = !ready;
+  ui.encounterButton.textContent = nearest?.collected ? "Begroeten" : "Kennismaken";
+  ui.nearbyMessage.textContent = !hasUsablePosition() ? (state.hasGpsLock ? "Je GPS is nog onnauwkeurig. Even geduld." : "Je wandeling begint zodra je locatie bekend is.")
+    : !Rules.inside(state.playerPosition, CONFIG.WIERINGEN_POLYGON) ? "Je vriendjes wonen op Wieringen."
+    : !nearest ? "Een rustig moment. Ontdek het eiland op je eigen tempo."
+    : nearest.radarVisible ? `${nearest.name} ${nearest.status || "is dichtbij"}. ${Math.round(nearest.distance)} m`
+    : `Een zacht signaal op ongeveer ${Math.round(nearest.distance)} meter.`;
+  ui.nearbyPortrait.hidden = !nearest?.radarVisible;
+  if (nearest?.radarVisible) {
+    const src = nearest.thumbnail || nearest.image;
+    if (ui.nearbyPortrait.getAttribute("src") !== src) ui.nearbyPortrait.src = src;
+    ui.nearbyPortrait.alt = nearest.name;
+  }
 }
 
 function hideEntityMarker(entity) {
@@ -901,7 +814,7 @@ function hideEntityMarker(entity) {
 }
 
 function decorateEntityMarkerForTests(entity) {
-  const path = entity.marker?._path;
+  const path = entity.marker?.getElement();
   if (!path) {
     return;
   }
@@ -929,7 +842,7 @@ function showNextDiscovery() {
   const nextId = state.discoveryQueue.shift();
   const entity = state.entities.find((item) => item.id === nextId);
 
-  if (!entity || entity.collected) {
+  if (!canMeet(entity)) {
     state.pendingDiscoveries.delete(nextId);
     showNextDiscovery();
     return;
@@ -940,6 +853,8 @@ function showNextDiscovery() {
   ui.discoveryImage.src = entity.image;
   ui.discoveryImage.alt = entity.name;
   ui.discoveryDescription.textContent = entity.description;
+  document.getElementById("discovery-eyebrow").textContent = entity.collected ? "Een bekend vriendje" : "Een nieuwe ontmoeting";
+  ui.collectButton.textContent = entity.collected ? "Fijn je weer te zien" : "Toevoegen aan Sammeltjesboek";
   ui.discoveryRarity.textContent = rarityLabel(entity.rarity);
   ui.discoveryRarity.className = `rarity-pill rarity-pill--${entity.rarity}`;
   ui.discoveryType.textContent = typeLabel(entity.type);
@@ -979,20 +894,26 @@ function collectCurrentDiscovery() {
   }
 
   entity.collected = true;
+  const alreadyKnown = state.discovered.has(entity.id);
   state.discovered.add(entity.id);
+  if (!alreadyKnown) {
+    state.foundDates[entity.id] = new Date().toISOString();
+    try { localStorage.setItem("sammeltjes-found-dates", JSON.stringify(state.foundDates)); } catch (error) { showToast("Je browser kan je voortgang niet bewaren."); }
+  }
   persistDiscoveredIds();
-  hideEntityMarker(entity);
+  syncEntityMarker(entity);
   renderBook();
   renderScanList();
   renderRadar();
   updateCounters();
-  showToast(`${entity.name} is toegevoegd aan je Sammeltjesboek.`);
+  showToast(alreadyKnown ? `${entity.name} is blij je weer te zien.` : `${entity.name} heeft een plekje in je Sammeltjesboek.`);
   dismissDiscovery(false);
+  renderEncounterPrompt();
 }
 
 function renderRadar() {
   const contacts = state.entities
-    .filter((entity) => !entity.collected && entity.radarVisible)
+    .filter((entity) => entity.enabled && entity.radarVisible)
     .sort((left, right) => left.distance - right.distance);
 
   renderRadarSignals(ui.miniRadarSignals, contacts, false);
@@ -1028,6 +949,7 @@ function renderRadar() {
 }
 
 function renderRadarSignals(container, contacts, showDistance) {
+  if (!container.closest("section, aside")?.getClientRects().length) return;
   const gridSize = container.parentElement.clientWidth || (showDistance ? 312 : 128);
   const center = gridSize / 2;
   const maxRadiusPx = center * 0.86;
@@ -1037,7 +959,7 @@ function renderRadarSignals(container, contacts, showDistance) {
     return;
   }
 
-  container.innerHTML = contacts
+  const html = contacts
     .map((entity) => {
       const bearing = bearingDegrees(state.playerPosition, entityPoint(entity));
       const angleRad = (bearing * Math.PI) / 180;
@@ -1059,10 +981,14 @@ function renderRadarSignals(container, contacts, showDistance) {
       `;
     })
     .join("");
+  if (container.dataset.rendered !== html) {
+    container.innerHTML = html;
+    container.dataset.rendered = html;
+  }
 }
 
 function renderScanList() {
-  if (!ui.scanList || !state.playerPosition) {
+  if (!ui.scanList || !state.playerPosition || !ui.scanList.getClientRects().length) {
     return;
   }
 
@@ -1173,6 +1099,10 @@ function openBookDetail(entity) {
   ui.bookDetailRarity.className = `rarity-pill rarity-pill--${entity.rarity}`;
   ui.bookDetailType.textContent = typeLabel(entity.type);
   ui.bookDetailDescription.textContent = entity.description;
+  const found = state.foundDates[entity.id];
+  document.getElementById("book-detail-date").textContent = found
+    ? `Vriendjes sinds ${new Intl.DateTimeFormat("nl-NL", { dateStyle: "long", timeZone: "Europe/Amsterdam" }).format(new Date(found))}`
+    : "Een vertrouwd vriendje uit je verzameling.";
   ui.bookDetailModal.classList.remove("hidden");
   ui.bookDetailModal.classList.add("flex");
   state.lastFocusedElement = document.activeElement;
@@ -1212,6 +1142,10 @@ function switchView(view) {
   ui.miniRadarPanel.classList.toggle("hidden", view !== "map");
   ui.scanPanel.classList.toggle("hidden", view !== "map");
   ui.recenterButton.classList.toggle("hidden", view !== "map");
+  ui.recenterButton.hidden = view !== "map";
+  document.body.dataset.gameView = view;
+  document.getElementById("nearby-panel").hidden = view !== "map";
+  if (view === "radar") renderRadar();
 }
 
 function updateCounters() {
@@ -1221,173 +1155,14 @@ function updateCounters() {
   ui.activeCounter.textContent = String(active);
 }
 
+const terrainService = window.SammeltjesTerrain.create(CONFIG.WIERINGEN_POLYGON);
 async function maybeRefreshTerrain() {
-  if (
-    state.terrain.isLoading ||
-    !state.playerPosition ||
-    Date.now() < state.terrain.retryAfter ||
-    (state.terrain.center &&
-      distanceMeters(state.terrain.center, state.playerPosition) < CONFIG.TERRAIN_REFRESH_DISTANCE)
-  ) {
-    return;
-  }
-
-  state.terrain.isLoading = true;
-  setTerrainStatus("laden");
-
-  const query = `
-    [out:json][timeout:20];
-    (
-      way["building"](around:${CONFIG.TERRAIN_FETCH_RADIUS},${state.playerPosition.lat},${state.playerPosition.lng});
-      way["natural"="water"](around:${CONFIG.TERRAIN_FETCH_RADIUS},${state.playerPosition.lat},${state.playerPosition.lng});
-      way["landuse"~"reservoir|basin"](around:${CONFIG.TERRAIN_FETCH_RADIUS},${state.playerPosition.lat},${state.playerPosition.lng});
-      way["waterway"](around:${CONFIG.TERRAIN_FETCH_RADIUS},${state.playerPosition.lat},${state.playerPosition.lng});
-      way["highway"](around:${CONFIG.TERRAIN_FETCH_RADIUS},${state.playerPosition.lat},${state.playerPosition.lng});
-      way["landuse"~"grass|farmland|meadow"](around:${CONFIG.TERRAIN_FETCH_RADIUS},${state.playerPosition.lat},${state.playerPosition.lng});
-      way["leisure"="park"](around:${CONFIG.TERRAIN_FETCH_RADIUS},${state.playerPosition.lat},${state.playerPosition.lng});
-      way["natural"="grassland"](around:${CONFIG.TERRAIN_FETCH_RADIUS},${state.playerPosition.lat},${state.playerPosition.lng});
-    );
-    out geom;
-  `;
-
-  try {
-    let terrainData = null;
-    const endpoints = CONFIG.OVERPASS_ENDPOINTS.map(
-      (_, index) => CONFIG.OVERPASS_ENDPOINTS[(index + state.terrain.endpointOffset) % CONFIG.OVERPASS_ENDPOINTS.length]
-    );
-
-    for (const endpoint of endpoints) {
-      const controller = new AbortController();
-      const timeout = window.setTimeout(() => controller.abort(), CONFIG.TERRAIN_REQUEST_TIMEOUT_MS);
-      try {
-        const response = await fetch(endpoint, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=UTF-8" },
-          body: query,
-          signal: controller.signal
-        });
-
-        if (!response.ok) {
-          throw new Error(String(response.status));
-        }
-
-        terrainData = await response.json();
-        state.terrain.endpointOffset = CONFIG.OVERPASS_ENDPOINTS.indexOf(endpoint);
-        break;
-      } catch (error) {
-        terrainData = null;
-      } finally {
-        window.clearTimeout(timeout);
-      }
-    }
-
-    if (!terrainData) {
-      throw new Error("Geen terreinrespons ontvangen.");
-    }
-
-    hydrateTerrain(terrainData);
-    state.terrain.center = { ...state.playerPosition };
-    state.terrain.retryAfter = 0;
-    setTerrainStatus("slim");
-
-    for (const entity of state.entities) {
-      if (entity.type === "wild" && !entity.collected) {
-        respawnWildEntity(entity, false);
-      }
-
-      if (entity.type === "roaming") {
-        entity.target = chooseRoamingTarget(entity);
-      }
-    }
-  } catch (error) {
-    state.terrain.ready = false;
-    state.terrain.retryAfter = Date.now() + CONFIG.TERRAIN_RETRY_DELAY_MS;
-    state.terrain.endpointOffset =
-      (state.terrain.endpointOffset + 1) % CONFIG.OVERPASS_ENDPOINTS.length;
-    setTerrainStatus("basis");
-  } finally {
-    state.terrain.isLoading = false;
-  }
+  if (!state.playerPosition || !hasUsablePosition()) return;
+  await terrainService.refresh(state.playerPosition);
+  setTerrainStatus(terrainService.status);
 }
-
-function hydrateTerrain(data) {
-  const allowedPolygons = [];
-  const forbiddenPolygons = [];
-  const allowedLines = [];
-  const forbiddenLines = [];
-
-  for (const element of data.elements || []) {
-    if (!Array.isArray(element.geometry) || element.geometry.length < 2) {
-      continue;
-    }
-
-    const coords = element.geometry.map((point) => ({ lat: point.lat, lng: point.lon }));
-    const tags = element.tags || {};
-    const isClosed = isClosedPolygon(coords);
-
-    if (tags.building && isClosed) {
-      forbiddenPolygons.push(coords);
-      continue;
-    }
-
-    if ((tags.natural === "water" || /reservoir|basin/.test(tags.landuse || "")) && isClosed) {
-      forbiddenPolygons.push(coords);
-      continue;
-    }
-
-    if (tags.waterway) {
-      forbiddenLines.push(coords);
-      continue;
-    }
-
-    if (tags.highway) {
-      allowedLines.push(coords);
-      continue;
-    }
-
-    if (
-      ((tags.landuse && /grass|farmland|meadow/.test(tags.landuse)) ||
-        tags.leisure === "park" ||
-        tags.natural === "grassland") &&
-      isClosed
-    ) {
-      allowedPolygons.push(coords);
-    }
-  }
-
-  state.terrain.ready = true;
-  state.terrain.allowedPolygons = allowedPolygons;
-  state.terrain.forbiddenPolygons = forbiddenPolygons;
-  state.terrain.allowedLines = allowedLines;
-  state.terrain.forbiddenLines = forbiddenLines;
-}
-
-function canOccupyTerrain(point, allowLooseTerrain) {
-  if (!pointInPolygon(point, CONFIG.WIERINGEN_POLYGON)) {
-    return false;
-  }
-
-  if (!state.terrain.ready) {
-    return allowLooseTerrain;
-  }
-
-  if (state.terrain.forbiddenPolygons.some((polygon) => pointInPolygon(point, polygon))) {
-    return false;
-  }
-
-  if (state.terrain.forbiddenLines.some((line) => isNearLine(point, line, 10))) {
-    return false;
-  }
-
-  if (state.terrain.allowedPolygons.some((polygon) => pointInPolygon(point, polygon))) {
-    return true;
-  }
-
-  if (state.terrain.allowedLines.some((line) => isNearLine(point, line, 16))) {
-    return true;
-  }
-
-  return allowLooseTerrain;
+function canOccupyTerrain(point) {
+  return terrainService.canOccupy(point);
 }
 
 function showToast(message) {
@@ -1415,16 +1190,24 @@ function updateConnectionStatus() {
   if (offline) {
     setTerrainStatus("offline");
   } else if (ui.terrainStatus.textContent === "offline") {
-    setTerrainStatus(state.terrain.ready ? "slim" : "basis");
+    setTerrainStatus(terrainService.status);
   }
 }
 
 function loadDiscoveredIds() {
   try {
-    return JSON.parse(localStorage.getItem(CONFIG.PLAYER_STORAGE_KEY) || "[]");
+    const ids = JSON.parse(localStorage.getItem(CONFIG.PLAYER_STORAGE_KEY) || "[]");
+    return Array.isArray(ids) ? ids.filter((id) => typeof id === "string") : [];
   } catch (error) {
     return [];
   }
+}
+
+function loadFoundDates() {
+  try {
+    const dates = JSON.parse(localStorage.getItem("sammeltjes-found-dates") || "{}");
+    return Object.fromEntries(Object.entries(dates).filter(([, date]) => typeof date === "string" && Number.isFinite(Date.parse(date))));
+  } catch (error) { return {}; }
 }
 
 function loadCollapsedPanelState() {
@@ -1450,7 +1233,8 @@ function saveCollapsedPanelState(value) {
 }
 
 function persistDiscoveredIds() {
-  localStorage.setItem(CONFIG.PLAYER_STORAGE_KEY, JSON.stringify(Array.from(state.discovered)));
+  try { localStorage.setItem(CONFIG.PLAYER_STORAGE_KEY, JSON.stringify(Array.from(state.discovered))); }
+  catch (error) { showToast("Je browser kan je voortgang niet bewaren. Houd deze pagina open."); }
 }
 
 function defaultBehaviorForType(type) {
@@ -1504,65 +1288,6 @@ function normalizeEntityRadius(value) {
   return Math.min(500, Math.max(50, numericValue));
 }
 
-function isEntityAvailableNow(entity, now = new Date()) {
-  const hour = now.getHours();
-
-  if (entity.availabilityMode === "all-day") {
-    return true;
-  }
-
-  if (entity.availabilityMode === "morning") {
-    return hour >= 6 && hour < 14;
-  }
-
-  if (entity.availabilityMode === "afternoon") {
-    return hour >= 11 && hour < 19;
-  }
-
-  if (entity.availabilityMode === "evening") {
-    return hour >= 17 && hour < 23;
-  }
-
-  if (entity.availabilityMode === "night") {
-    return hour >= 21 || hour < 7;
-  }
-
-  const activeHours = getRandomActiveHours(entity, now);
-  return activeHours.has(hour);
-}
-
-function getRandomActiveHours(entity, now) {
-  const seed = createSeed(`${entity.id}-${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`);
-  const generator = createSeededRandom(seed);
-  const selectedHours = new Set();
-  const preferredHours = [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22];
-  const allHours = Array.from({ length: 24 }, (_, hour) => hour);
-
-  while (selectedHours.size < entity.randomHoursPerDay) {
-    const pool = generator() < 0.78 ? preferredHours : allHours;
-    selectedHours.add(pool[Math.floor(generator() * pool.length)]);
-  }
-
-  return selectedHours;
-}
-
-function createSeed(input) {
-  let hash = 2166136261;
-  for (let index = 0; index < input.length; index += 1) {
-    hash ^= input.charCodeAt(index);
-    hash = Math.imul(hash, 16777619);
-  }
-
-  return hash >>> 0;
-}
-
-function createSeededRandom(seed) {
-  let current = seed || 1;
-  return () => {
-    current = (current * 1664525 + 1013904223) >>> 0;
-    return current / 4294967296;
-  };
-}
 
 function oneOf(value, allowedValues, fallback) {
   return allowedValues.includes(value) ? value : fallback;
@@ -1904,6 +1629,7 @@ function installTestApi() {
         type: entity.type,
         rarity: entity.rarity,
         behavior: entity.behavior,
+        speedKmh: entity.speedKmh,
         enabled: entity.enabled,
         radius: entity.radius,
         active: entity.active,
