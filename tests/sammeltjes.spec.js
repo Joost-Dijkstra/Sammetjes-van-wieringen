@@ -66,6 +66,61 @@ test("Zonder bruikbare GPS begint geen ontmoeting", async ({page}) => {
   await expect(page.getByTestId("discovery-modal")).toBeHidden();
   await expect(page.locator("#nearby-message")).toContainText("locatie");
 });
+
+test("Prentenboek filtert vriendjes en houdt de verzameling en voortgang intact", async ({page}) => {
+  const errors = errorsFor(page);
+  await page.setViewportSize({width:390,height:844});
+  await game(page, true);
+  await page.locator('[data-view="book"]').click();
+  await expect(page.locator('.book-card--undiscovered')).toHaveCount(20);
+  await page.locator('[data-book-filter="found"]').click();
+  await expect(page.locator('.book-empty')).toBeVisible();
+  await expect(page.getByTestId('book-progress')).toHaveAttribute('value','0');
+  await page.locator('[data-book-walk]').click();
+  await expect(page.getByTestId('book-panel')).toBeHidden();
+  await page.getByTestId('encounter-btn').click();
+  await page.getByRole('button',{name:'Toevoegen aan Sammeltjesboek',exact:true}).click();
+  await page.locator('[data-view="book"]').click();
+  await expect(page.locator('.book-card')).toHaveCount(1);
+  await expect(page.locator('[data-book-filter="found"]')).toHaveAttribute('aria-pressed','true');
+  await expect(page.getByTestId('book-progress')).toHaveAttribute('value','1');
+  await page.locator('[data-book-open="molenmaatje"]').click();
+  await expect(page.locator('#book-detail-image')).toHaveCSS('object-fit','contain');
+  await expect(page.locator('#book-detail-date')).toContainText('Vriendjes sinds');
+  await page.getByRole('button',{name:'Sluit Sammeltje detail',exact:true}).click();
+  await expect(page.locator('[data-book-open="molenmaatje"]')).toBeFocused();
+  await page.locator('[data-book-filter="all"]').click();
+  await expect(page.locator('.book-card')).toHaveCount(20);
+  await expect(page.locator('.book-card').first()).toHaveAttribute('data-book-open','molenmaatje');
+  await page.reload();
+  await page.locator('[data-view="book"]').click();
+  await expect(page.getByTestId('book-progress')).toHaveAttribute('value','1');
+  expect(errors).toEqual([]);
+});
+
+test("Prentenboek en getekende navigatie passen op kleine en grote schermen", async ({page}) => {
+  await page.emulateMedia({reducedMotion:'reduce'});
+  await game(page);
+  await page.locator('[data-view="book"]').click();
+  for (const size of [{width:320,height:568},{width:390,height:844},{width:844,height:390},{width:1280,height:900}]) {
+    await page.setViewportSize(size);
+    await expect(page.locator('#close-book-btn')).toBeInViewport();
+    const geometry=await page.evaluate(()=>{
+      const grid=document.querySelector('#book-grid');
+      const card=grid.querySelector('.book-card');
+      return {overflow:document.documentElement.scrollWidth>innerWidth,cardHeight:card.getBoundingClientRect().height,cardContent:card.scrollHeight,cardClient:card.clientHeight,gridHeight:grid.clientHeight,nav:[...document.querySelectorAll('.nav-button')].map(b=>({height:b.getBoundingClientRect().height,icon:!!b.querySelector('svg use')}))};
+    });
+    expect(geometry.overflow).toBeFalsy();
+    expect(geometry.cardHeight).toBeGreaterThan(220);
+    expect(geometry.cardContent).toBeLessThanOrEqual(geometry.cardClient+1);
+    expect(geometry.gridHeight).toBeGreaterThan(60);
+    for (const button of geometry.nav) { expect(button.height).toBeGreaterThanOrEqual(44); expect(button.icon).toBeTruthy(); }
+    await page.locator('.book-card').last().scrollIntoViewIfNeeded();
+    await expect(page.locator('.book-card').last()).toBeInViewport();
+  }
+  await page.locator('[data-view="book"]').click();
+  await expect(page.getByTestId('book-panel')).toBeHidden();
+});
 test("Werkplaats toont een geselecteerd vriendje en kan alle vriendjes tonen", async ({page}) => {
   const errors = errorsFor(page);
   await admin(page);

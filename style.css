@@ -1,15 +1,18 @@
 :root {
-  --common: #728f52;
-  --rare: #557c98;
-  --legendary: #b6893a;
-  --ink: #4b3827;
-  --ink-soft: #73553a;
-  --panel: rgba(241, 226, 190, 0.9);
-  --panel-deep: rgba(221, 195, 146, 0.92);
-  --paper: #e9d4ab;
-  --paper-light: #f8efd8;
-  --shadow: 0 18px 45px rgba(79, 52, 25, 0.24);
-  --border: rgba(106, 69, 36, 0.4);
+  --common: #39825a;
+  --rare: #277eaa;
+  --legendary: #af771b;
+  --ink: #213f3b;
+  --ink-soft: #576b60;
+  --sea: #176b68;
+  --sea-light: #d8eee7;
+  --honey: #efc45f;
+  --panel: #fffaf0;
+  --panel-deep: #e9efd8;
+  --paper: #f3edd9;
+  --paper-light: #fffaf0;
+  --shadow: 0 12px 35px #244d4524;
+  --border: #275c4930;
 }
 
 * {
@@ -23,18 +26,18 @@ body {
 }
 
 body {
-  font-family: "Palatino Linotype", Palatino, Georgia, serif;
+  font-family: "Trebuchet MS", "Lucida Sans Unicode", sans-serif;
   color: var(--ink);
   background:
-    radial-gradient(circle at 20% 15%, rgba(255, 247, 214, 0.45), transparent 20%),
-    radial-gradient(circle at 80% 12%, rgba(191, 142, 73, 0.18), transparent 24%),
-    linear-gradient(180deg, #d9b980 0%, #b18755 100%);
+    radial-gradient(ellipse at 12% 0, #fcf0b4, transparent 55%),
+    linear-gradient(150deg, #d9efdf, #badfe3);
 }
 
 .title-font {
   font-family: "Book Antiqua", "Palatino Linotype", Georgia, serif;
-  line-height: 1;
-  letter-spacing: 0.04em;
+  line-height: 1.12;
+  letter-spacing: -0.025em;
+  color: var(--ink);
 }
 
 #map {
@@ -58,7 +61,7 @@ body {
   right: 1rem;
   z-index: 855;
   gap: 0.45rem;
-  background: linear-gradient(180deg, rgba(250, 239, 211, 0.98), rgba(225, 194, 144, 0.98));
+  background: var(--paper-light);
 }
 
 .map-center-button span {
@@ -71,11 +74,11 @@ body {
 }
 
 .leaflet-container {
-  background: #d7c097;
+  background: #b9dde0;
   font: inherit;
 }
 
-.leaflet-tile-pane { filter: sepia(0.42) saturate(0.8) hue-rotate(-12deg) contrast(0.96); }
+.leaflet-tile-pane { filter: saturate(1.12) contrast(0.98); }
 
 .leaflet-pane.island-mask-pane,
 .leaflet-pane.island-coast-pane {
@@ -83,7 +86,7 @@ body {
 }
 
 .island-pergament-mask {
-  mix-blend-mode: multiply;
+  mix-blend-mode: normal;
 }
 
 .handdrawn-coast {
@@ -104,28 +107,21 @@ body {
   border-radius: 14px 0 0 0;
   border-top: 1px solid var(--border);
   border-left: 1px solid var(--border);
-  background: rgba(239, 222, 184, 0.88) !important;
+  background: #fffaf0ed !important;
   color: var(--ink-soft);
 }
 
 .aurora-overlay {
   background:
-    radial-gradient(circle at 18% 12%, rgba(255, 241, 199, 0.28), transparent 20%),
-    radial-gradient(circle at 82% 20%, rgba(141, 88, 36, 0.18), transparent 18%),
-    linear-gradient(180deg, rgba(114, 72, 37, 0.14), rgba(55, 34, 18, 0.2)),
-    repeating-linear-gradient(
-      0deg,
-      rgba(120, 81, 43, 0.04) 0 2px,
-      rgba(255, 247, 230, 0.02) 2px 5px
-    );
-  mix-blend-mode: multiply;
+    radial-gradient(ellipse at 10% 0, #fff2ac24, transparent 40%),
+    linear-gradient(0deg, #176b6817, transparent 22%);
 }
 
 .soft-panel {
   border: 1px solid var(--border);
   border-radius: 20px;
   background:
-    linear-gradient(180deg, rgba(249, 239, 211, 0.96), rgba(224, 196, 146, 0.9)),
+    linear-gradient(135deg, #fffdf5fa, #f1f2dffa),
     repeating-linear-gradient(
       90deg,
       rgba(122, 81, 46, 0.03) 0 3px,
@@ -140,7 +136,7 @@ body {
   content: "";
   position: absolute;
   inset: 6px;
-  border: 1px solid rgba(127, 91, 52, 0.22);
+  border: 1px solid #76937630;
   border-radius: 15px;
   pointer-events: none;
 }
@@ -175,9 +171,9 @@ body {
   align-items: center;
   justify-content: center;
   min-width: 5.8rem;
-  border: 1px solid rgba(107, 71, 41, 0.36);
+  border: 1px solid var(--border);
   border-radius: 999px;
-  background: rgba(250, 242, 220, 0.72);
+  background: #e6f1e7;
   box-shadow: inset 0 1px 0 rgba(255, 247, 228, 0.8);
   color: var(--ink-soft);
   cursor: pointer;
@@ -231,19 +227,19 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(107, 71, 41, 0.46);
+  border: 1px solid var(--border);
   border-radius: 999px;
   background:
-    linear-gradient(180deg, rgba(250, 237, 205, 0.98), rgba(212, 177, 125, 0.98));
+    linear-gradient(180deg, #fffdf5, #edf3e6);
   box-shadow:
     inset 0 1px 0 rgba(255, 247, 228, 0.85),
-    0 8px 18px rgba(83, 54, 29, 0.18);
+    0 4px 12px #244d4518;
   color: var(--ink);
   cursor: pointer;
-  font-family: "Book Antiqua", "Palatino Linotype", Georgia, serif;
+  font-family: inherit;
   font-size: 0.88rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0;
   padding: 0.82rem 1.2rem;
   transition:
     transform 180ms ease,
@@ -266,8 +262,10 @@ body {
 }
 
 .soft-button--primary {
-  background: linear-gradient(180deg, #f8d889 0%, #c99741 100%);
-  color: #4f3414;
+  background: linear-gradient(135deg, #247e70, #176460);
+  border-color: #155750;
+  color: #fffdf2;
+  box-shadow: inset 0 1px 0 #ffffff38, 0 4px 0 #134f4833;
 }
 
 .status-chip {
@@ -275,7 +273,7 @@ body {
   align-items: center;
   gap: 0.35rem;
   border-radius: 999px;
-  background: rgba(247, 236, 206, 0.8);
+  background: #e7f0de;
   border: 1px solid rgba(116, 79, 47, 0.18);
   color: var(--ink);
   padding: 0.42rem 0.75rem;
@@ -284,25 +282,34 @@ body {
 }
 
 .status-chip--subtle {
-  background: rgba(232, 212, 172, 0.9);
+  background: #e1ede5;
 }
 
+.illustration-definitions { position: absolute; width: 0; height: 0; overflow: hidden; }
+.drawn-icon { fill: none; stroke: #31594e; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.island-navigation {
+  display: flex; align-items: stretch; gap: 6px; max-width: 440px; margin: auto;
+  padding: 6px; border: 1px solid #fff7d9; border-radius: 25px;
+  background: #fffaf0fa; box-shadow: 0 8px 25px #1b514633, inset 0 0 0 3px #eadfb833;
+}
 .nav-button {
   flex: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.45rem;
+  flex-direction: column;
+  gap: 3px;
   border: 0;
-  border-radius: 999px;
+  border-radius: 19px;
   background: transparent;
-  color: rgba(86, 59, 31, 0.78);
+  color: #4e6559;
   cursor: pointer;
-  font-family: "Book Antiqua", "Palatino Linotype", Georgia, serif;
-  font-size: 0.88rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  padding: 0.85rem 0.9rem;
+  font-family: inherit;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  padding: 7px 4px;
+  min-width: 0;
   transition:
     background 180ms ease,
     color 180ms ease,
@@ -311,19 +318,21 @@ body {
 
 .nav-button:hover,
 .nav-button:focus-visible {
-  background: rgba(214, 184, 137, 0.5);
+  background: #e8f0df;
   color: var(--ink);
   outline: none;
 }
 
 .nav-button.is-active {
-  background: linear-gradient(180deg, rgba(248, 231, 190, 0.96), rgba(206, 161, 98, 0.92));
-  color: var(--ink);
-  box-shadow: inset 0 1px 0 rgba(255, 247, 228, 0.88);
+  background: linear-gradient(135deg, #d2e9d8, #deedc5);
+  color: #214f40;
+  box-shadow: inset 0 0 0 1px #56886933;
 }
+.nav-button[data-view="book"].is-active { background: linear-gradient(135deg, #fff0b9, #f5d480); color: #5b4618; }
+.nav-button[data-view="radar"].is-active { background: linear-gradient(135deg, #d3eeee, #a8d6d7); color: #215355; }
 
 .nav-button__icon {
-  font-size: 1.1rem;
+  width: 31px; height: 31px; flex: 0 0 auto;
 }
 
 .view-panel {
@@ -346,8 +355,7 @@ body {
   border-radius: 999px;
   border: 2px solid rgba(109, 76, 42, 0.56);
   background:
-    radial-gradient(circle at center, rgba(242, 224, 178, 0.28), rgba(101, 65, 34, 0.92)),
-    linear-gradient(180deg, rgba(214, 174, 108, 0.18), rgba(49, 28, 14, 0.78));
+    radial-gradient(circle at 35% 30%, #3a8e89, #174e59 80%);
   box-shadow:
     inset 0 0 0 1px rgba(251, 238, 209, 0.18),
     inset 0 0 28px rgba(241, 210, 152, 0.12),
@@ -482,7 +490,7 @@ body {
   gap: 0.7rem;
   border-radius: 18px;
   border: 1px solid rgba(112, 75, 42, 0.26);
-  background: rgba(245, 232, 199, 0.86);
+  background: #f3f7e9;
   padding: 0.85rem 0.95rem;
   box-shadow: inset 0 1px 0 rgba(255, 246, 226, 0.86);
 }
@@ -523,90 +531,116 @@ body {
 }
 
 .rarity-pill--common {
-  background: rgba(76, 182, 107, 0.9);
+  background: var(--common);
 }
 
 .rarity-pill--rare {
-  background: rgba(78, 141, 255, 0.9);
+  background: var(--rare);
 }
 
 .rarity-pill--legendary {
-  background: rgba(240, 191, 76, 0.95);
+  background: var(--honey);
   color: #5c4600;
 }
 
-.book-card {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  border-radius: 20px;
-  border: 1px solid rgba(112, 75, 42, 0.26);
-  background: rgba(245, 232, 199, 0.9);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 246, 226, 0.86),
-    0 10px 24px rgba(74, 46, 24, 0.14);
-  overflow: hidden;
-  padding: 0.75rem;
+/* The journal is its own page; the map remains untouched underneath. */
+body[data-game-view="book"] header { visibility: hidden; }
+#book-panel { top: max(12px, env(safe-area-inset-top)); bottom: calc(112px + env(safe-area-inset-bottom)) !important; }
+.book-journal {
+  display: flex; flex-direction: column; height: 100%; max-width: 740px; margin: auto;
+  padding: 24px 26px 12px; overflow: hidden; border: 1px solid #fff8db; border-radius: 26px;
+  background: radial-gradient(ellipse at 100% 0, #fbecc080, transparent 55%),
+    repeating-linear-gradient(0deg, #78522903 0 1px, transparent 1px 4px), #fffbef;
+  box-shadow: 0 15px 55px #23473c38, inset 5px 0 0 #d9b7764a, inset 9px 0 0 #a5884520;
 }
-
-.book-card--interactive {
-  width: 100%;
-  color: inherit;
-  cursor: pointer;
-  font: inherit;
-  text-align: left;
-  appearance: none;
-  transition:
-    transform 180ms ease,
-    box-shadow 180ms ease,
-    border-color 180ms ease;
+.book-heading { display: flex; justify-content: space-between; gap: 12px; align-items: center; margin-bottom: 17px; flex-shrink: 0; }
+.book-heading h2 { font-size: clamp(1.65rem, 4vw, 2.2rem); }
+.book-eyebrow { font-size: .58rem; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; color: var(--sea); margin: 0 0 5px; }
+.book-close { display: flex; gap: 8px; align-items: center; min-height: 44px; padding: 7px 11px; border: 1px solid #57766835; border-radius: 15px; color: var(--sea); font-size: .72rem; background: #f3f2df; }
+.book-close span { font-size: 1.2rem; }
+.book-cover {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; position: relative;
+  flex-shrink: 0; overflow: hidden; padding: 19px 24px; border-radius: 19px 19px 32px 19px;
+  background: radial-gradient(ellipse at 80% 120%, #64a88d80 0 40%, transparent 41%),
+    radial-gradient(ellipse at 25% 160%, #8fc4a44a 0 50%, transparent 51%), linear-gradient(120deg, #175f59, #318679);
+  color: #fff9df; border: 1px solid #185c53;
 }
-
-.book-card--interactive:hover,
-.book-card--interactive:focus-visible {
-  transform: translateY(-2px);
-  border-color: rgba(143, 101, 54, 0.46);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 246, 226, 0.9),
-    0 16px 28px rgba(74, 46, 24, 0.18);
-  outline: none;
+.book-cover::after { content: ""; position: absolute; inset: 6px; border: 1px solid #f8e5a42e; border-radius: 14px 14px 26px 14px; pointer-events: none; }
+.book-cover__copy { max-width: 360px; }
+.book-cover__title { font: 1.75rem/1.08 "Palatino Linotype", Palatino, Georgia, serif; letter-spacing: -.015em; }
+#book-summary { font-size: .72rem; color: #ecf3df; line-height: 1.5; margin: 10px 0 0; max-width: 275px; }
+.book-medallion { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 0 0 100px; height: 100px; border-radius: 50%; background: #ffe7a0; box-shadow: 0 0 0 5px #fff7ce19, inset 0 0 0 5px #e2b85366; transform: rotate(9deg); }
+.book-medallion svg { width: 58px; height: 58px; }
+.book-medallion span { font: bold 8px/1.5 "Trebuchet MS", sans-serif; letter-spacing: .17em; color: #6b541f; }
+.book-progress-row { display: flex; justify-content: space-between; gap: 8px; margin: 14px 0 7px; font-size: .67rem; color: var(--ink-soft); }
+#book-progress-label { font-weight: 700; color: var(--sea); }
+#book-progress { display: block; width: 100%; height: 7px; flex: 0 0 7px; appearance: none; border: 0; border-radius: 20px; overflow: hidden; background: #e8e6d5; color: #ce9a2e; }
+#book-progress::-webkit-progress-bar { background: #e8e6d5; border-radius: 20px; }
+#book-progress::-webkit-progress-value { background: linear-gradient(90deg, #c79736, #efc660); border-radius: 20px; }
+#book-progress::-moz-progress-bar { background: #d3a13b; border-radius: 20px; }
+.book-filters { display: flex; gap: 8px; flex-shrink: 0; margin: 14px 0 10px; }
+.book-filters button { display: inline-flex; align-items: center; justify-content: center; gap: 9px; min-height: 44px; padding: 8px 13px; border: 1px solid #607b5c30; border-radius: 13px; color: #51624d; font-size: .75rem; background: #f3efdf; }
+.book-filters button[aria-pressed="true"] { color: #fffdf0; background: var(--sea); border-color: var(--sea); }
+.book-filters button span { font-size: .66rem; background: #00000010; padding: 2px 6px; border-radius: 7px; }
+.book-filters button[aria-pressed="true"] span { background: #ffffff22; }
+.book-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-rows: max-content; align-content: start; gap: 15px; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 4px 5px 16px; scrollbar-width: thin; scrollbar-color: #aec2a5 transparent; }
+.book-card { display: flex; flex-direction: column; min-width: 0; width: 100%; overflow: hidden; border: 1px solid #7e966746; border-radius: 16px; padding: 5px; background: #fffdf4; box-shadow: 0 3px 0 #c1b89d38, 0 5px 12px #4168410a; }
+.book-card--interactive { color: inherit; cursor: pointer; font: inherit; text-align: left; appearance: none; transition: transform 180ms ease, box-shadow 180ms ease; }
+.book-card--interactive:hover { transform: translateY(-3px); box-shadow: 0 7px 18px #375b3826; }
+.habitat-field { --habitat-bg: #e6efd3; --habitat-ink: #46734e; }
+.habitat-coast { --habitat-bg: #d6eeeb; --habitat-ink: #347879; }
+.habitat-sky { --habitat-bg: #e0eff6; --habitat-ink: #457f99; }
+.habitat-mystic { --habitat-bg: #f3e4bc; --habitat-ink: #8d681e; }
+.habitat-dune { --habitat-bg: #f2e7ce; --habitat-ink: #856b3c; }
+.habitat-meadow { --habitat-bg: #e9edd4; --habitat-ink: #647946; }
+.book-card__art { position: relative; display: flex; align-items: center; justify-content: center; height: 176px; flex: 0 0 auto; overflow: hidden; border-radius: 11px; background: radial-gradient(ellipse at 50% 42%, #fffdf1 0 20%, transparent 72%), var(--habitat-bg); }
+.habitat-drawing { position: absolute; width: 100%; height: 70px; bottom: 0; fill: none; stroke: var(--habitat-ink); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; opacity: .35; }
+.book-card__art img { position: relative; display: block; width: calc(100% - 10px); height: 148px; object-fit: contain; border-radius: 28% 28% 18% 18%; mix-blend-mode: multiply; }
+.book-card__number { position: absolute; left: 7px; top: 6px; z-index: 1; color: var(--habitat-ink); font: italic 12px Georgia, serif; }
+.friend-stamp { position: absolute; right: 5px; bottom: 7px; z-index: 1; padding: 3px 7px; border: 1px solid #3c7856; outline: 2px solid #fff8e4; border-radius: 5px; color: #356348; background: #f2f4ddef; font-size: .52rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; transform: rotate(-9deg); }
+.book-card__copy { display: flex; flex-direction: column; flex: 1; padding: 10px 6px 7px; }
+.book-card__habitat { color: var(--habitat-ink); font-size: .52rem; font-weight: 700; text-transform: uppercase; letter-spacing: .065em; margin: 0 0 5px; }
+.book-card__name { font: bold 1.06rem/1.15 "Palatino Linotype", Palatino, Georgia, serif; letter-spacing: -.01em; color: var(--ink); overflow-wrap: anywhere; }
+.book-card__rarity { display: flex; align-items: center; gap: 5px; margin-top: auto; padding-top: 10px; font-size: .6rem; color: var(--ink-soft); }
+.rarity-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--common); flex-shrink: 0; }
+.rarity-dot--rare { background: var(--rare); }
+.rarity-dot--legendary { background: var(--legendary); }
+.book-card__open { margin-left: auto; font-size: 1rem; line-height: .8; color: var(--sea); }
+.book-card--undiscovered { background: #f8f5e9; border-style: dashed; box-shadow: none; }
+.mystery-friend { position: relative; width: 118px; height: 118px; color: var(--habitat-ink); opacity: .2; }
+.mystery-question { position: absolute; top: 46%; left: 50%; transform: translate(-50%, -50%); font: italic 2rem Georgia, serif; color: var(--habitat-ink); }
+.book-card__mystery { margin-top: 10px; font-size: .61rem; color: var(--ink-soft); }
+.book-footer { text-align: center; flex-shrink: 0; margin: 9px 0 0; font: italic .75rem Georgia, serif; color: #6d7961; }
+.book-empty { grid-column: 1 / -1; padding: 22px 18px; text-align: center; border: 1px dashed #9eae855f; border-radius: 18px; background: #eff1df; }
+.book-empty svg { width: 62px; height: 62px; margin: 0 auto 12px; }
+.book-empty h3 { font: bold 1.2rem Georgia, serif; }
+.book-empty p { max-width: 310px; margin: 12px auto 18px; font-size: .82rem; line-height: 1.6; color: var(--ink-soft); }
+.book-detail-art { position: relative; margin-top: 18px; padding: 29px 10px 10px; border: 1px solid #ffffff; border-radius: 25px; background: radial-gradient(ellipse, #fffbed, transparent), var(--habitat-bg); }
+.book-detail-art .friend-stamp { top: 10px; right: 12px; bottom: auto; }
+.book-detail-image { mix-blend-mode: multiply; }
+#hud-panel { border-top: 3px solid #e3b64e; }
+.panel-toggle-button { min-height: 44px; font-family: inherit; font-size: .72rem; letter-spacing: 0; }
+button:focus-visible, .book-card--interactive:focus-visible { outline: 3px solid var(--sea); outline-offset: 3px; }
+@media (max-width: 600px) {
+  .book-journal { padding: 17px 13px 10px; border-radius: 22px; }
+  .book-heading { margin-bottom: 13px; gap: 8px; }
+  .book-heading h2 { font-size: 1.65rem; }
+  .book-cover { padding: 17px 15px; gap: 8px; }
+  .book-cover__title { font-size: 1.5rem; }
+  .book-medallion { flex-basis: 77px; height: 77px; }
+  .book-medallion svg { width: 44px; height: 44px; }
+  .book-medallion span { font-size: 6px; }
+  #book-summary { font-size: .65rem; max-width: 205px; }
+  .book-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .book-card__art { height: 162px; }
+  .book-card__art img { height: 139px; }
+  .book-footer { font-size: .65rem; }
 }
-
-.book-card img {
-  display: block;
-  width: 100%;
-  height: 134px;
-  object-fit: cover;
-  border-radius: 18px;
-}
-
-.book-card--undiscovered img {
-  filter: grayscale(1) brightness(0.1);
-  opacity: 0.48;
-}
-
-.book-card__name {
-  font-family: "Book Antiqua", "Palatino Linotype", Georgia, serif;
-  font-size: 1rem;
-  line-height: 1.1;
-  letter-spacing: 0.03em;
-}
-
-.book-card__description {
-  color: rgba(79, 58, 37, 0.82);
-  font-size: 0.96rem;
-  line-height: 1.45;
-}
-
-.book-card__mystery {
-  color: rgba(79, 58, 37, 0.6);
-  font-size: 0.92rem;
-  font-style: italic;
-  line-height: 1.45;
-}
-
-.book-detail-image {
-  box-shadow: 0 14px 32px rgba(60, 38, 18, 0.16);
+@media (max-height: 680px) {
+  .book-cover { display: none; }
+  .book-journal { padding-top: 12px; }
+  .book-heading { margin-bottom: 0; }
+  .book-footer { display: none; }
 }
 
 .toast {
@@ -618,7 +652,7 @@ body {
   max-width: min(90vw, 360px);
   border: 1px solid rgba(109, 74, 43, 0.5);
   border-radius: 999px;
-  background: rgba(81, 51, 28, 0.94);
+  background: #205e55f5;
   box-shadow: 0 16px 38px rgba(36, 22, 12, 0.36);
   color: #f7ecd1;
   font-size: 1rem;
@@ -660,7 +694,7 @@ body {
 
 .player-marker::after {
   inset: 5px;
-  background: #8b5a2b;
+  background: #197f8e;
 }
 
 @keyframes radarSweep {
@@ -744,13 +778,13 @@ body {
   position: absolute; z-index: 860; left: 16px; right: 16px;
   bottom: calc(118px + env(safe-area-inset-bottom)); margin: auto; max-width: 440px;
   display: flex; align-items: center; gap: 12px; padding: 14px 16px;
-  border: 1px solid rgba(106,69,36,.28); border-radius: 22px;
-  background: linear-gradient(135deg, #fbf2dcf5, #ebd8b5f5);
+  border: 1px solid #46847a40; border-left: 4px solid #d9af49; border-radius: 22px;
+  background: linear-gradient(135deg, #fffdf3fa, #eaf3e3fa);
   box-shadow: 0 5px 24px #4b382723;
 }
 .nearby-panel img { width: 48px; height: 58px; object-fit: contain; border-radius: 14px; }
 .nearby-copy { min-width: 0; flex: 1; }
-.nearby-eyebrow { font-size: .6rem; text-transform: uppercase; letter-spacing: .17em; color: #806443; }
+.nearby-eyebrow { font-size: .6rem; text-transform: uppercase; letter-spacing: .14em; color: var(--sea); font-weight: 700; }
 .nearby-copy p { margin: 4px 0 0; font-size: .87rem; line-height: 1.4; }
 .nearby-panel button { padding: 10px 12px; font-size: .65rem; min-height: 44px; }
 .companion-marker { background: none; border: none; transition: transform 200ms linear; }
@@ -768,7 +802,6 @@ body {
 .mystery-signal { display: block; margin: 17px; width: 19px; height: 19px; border-radius: 50%; background: #e7ca83; border: 1px solid #a88641; color: #76531d; text-align: center; font: 13px/17px Georgia,serif; box-shadow: 0 0 14px #f4dfa5; }
 .encounter-image { height: min(38dvh, 300px); object-fit: contain; }
 .book-detail-image { height: min(43dvh, 340px); object-fit: contain; }
-.book-card img { object-fit: contain; height: 165px; background: #fff8e2; }
 .book-find-date { margin-top: 12px; font-size: .8rem; color: var(--ink-soft); font-style: italic; }
 body[data-game-view="radar"] .leaflet-control-zoom,
 body[data-game-view="book"] .leaflet-control-zoom { visibility: hidden; }
@@ -781,7 +814,7 @@ body[data-game-view="book"] .leaflet-control-zoom { visibility: hidden; }
 @keyframes companionWalk { from { transform: translateY(-1px) rotate(-3deg); } to { transform: translateY(-3px) rotate(3deg); } }
 @keyframes encounterReveal { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
 @media (max-width: 430px) {
-  .nav-button { flex-direction: column; gap: 3px; padding: 6px 4px; font-size: .61rem; letter-spacing: .01em; }
+  .nav-button { flex-direction: column; gap: 3px; padding: 6px 4px; font-size: .63rem; letter-spacing: 0; }
   .nav-button span:last-child { display: block; }
   .nearby-panel { left: 10px; right: 10px; padding: 12px; gap: 9px; }
   .nearby-eyebrow { font-size: .55rem; }

@@ -56,6 +56,7 @@ const state = {
   lastKnownGpsPosition: null,
   entities: [],
   currentView: "map",
+  bookFilter: "all",
   discovered: new Set(loadDiscoveredIds()),
   discoveryQueue: [],
   pendingDiscoveries: new Set(),
@@ -178,6 +179,13 @@ function bindUi() {
   document.getElementById("book-detail-backdrop").addEventListener("click", closeBookDetail);
   ui.collectButton.addEventListener("click", collectCurrentDiscovery);
   ui.bookGrid.addEventListener("click", handleBookGridClick);
+  document.querySelectorAll("[data-book-filter]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.bookFilter = button.dataset.bookFilter;
+      renderBook();
+      ui.bookGrid.scrollTop = 0;
+    });
+  });
 
   bindCollapsiblePanel("hud", ui.hudPanel, ui.hudPanelToggle);
   bindCollapsiblePanel("mini-radar", ui.miniRadarPanel, ui.miniRadarPanelToggle);
@@ -358,8 +366,8 @@ function mountIslandFrame() {
     pane: "islandMaskPane",
     stroke: false,
     fill: true,
-    fillColor: "#6f4b2d",
-    fillOpacity: 0.27,
+    fillColor: "#d3e8e0",
+    fillOpacity: 0.16,
     fillRule: "evenodd",
     className: "island-pergament-mask",
     interactive: false
@@ -1040,43 +1048,72 @@ function renderBook() {
   const found = state.entities.filter((entity) => state.discovered.has(entity.id)).length;
 
   ui.bookSummary.textContent =
-    found > 0
-      ? `Je hebt ${found} van de ${total} Sammeltjes gevonden.`
-      : "Je hebt nog geen Sammeltjes toegevoegd.";
+    total > 0 && found === total ? "Alle eilandvriendjes hebben een plekje in jouw boek!"
+      : found > 0 ? "Vertrouwde gezichtjes, verzameld tijdens jouw wandelingen."
+      : "Er wacht een eiland vol ontmoetingen op je.";
+  const progress = document.getElementById("book-progress");
+  progress.max = Math.max(1, total);
+  progress.value = found;
+  progress.setAttribute("aria-valuetext", `${found} van ${total} vriendjes gevonden`);
+  document.getElementById("book-progress-label").textContent = `${found} van ${total} vriendjes`;
+  document.getElementById("book-total-count").textContent = total;
+  document.getElementById("book-found-count").textContent = found;
+  document.querySelectorAll("[data-book-filter]").forEach((button) => {
+    button.setAttribute("aria-pressed", String(button.dataset.bookFilter === state.bookFilter));
+  });
 
-  ui.bookGrid.innerHTML = state.entities
-    .map((entity) => {
+  const cards = state.entities.map((entity, index) => ({ entity, index }))
+    .filter(({ entity }) => state.bookFilter !== "found" || state.discovered.has(entity.id))
+    .sort((a, b) => Number(state.discovered.has(b.entity.id)) - Number(state.discovered.has(a.entity.id)));
+  ui.bookGrid.innerHTML = cards
+    .map(({ entity, index }) => {
       const discovered = state.discovered.has(entity.id);
+      const habitat = bookHabitat(entity.biome);
+      const number = String(index + 1).padStart(2, "0");
+      const decoration = `<svg class="habitat-drawing" viewBox="0 0 160 70" aria-hidden="true"><use href="#habitat-${habitat.theme}"/></svg>`;
       if (!discovered) {
         return `
-          <article class="book-card book-card--undiscovered">
-            <img src="${entity.thumbnail || entity.image}" alt="Verborgen silhouet" loading="lazy" />
-            <div>
-              <p class="book-card__name text-slate-500">Onbekend Sammeltje</p>
-              <p class="book-card__mystery">Silhouet zichtbaar. Loop dichterbij om dit vriendje te onthullen.</p>
+          <article class="book-card book-card--undiscovered habitat-${habitat.theme}">
+            <div class="book-card__art"><span class="book-card__number">${number}</span>${decoration}
+              <svg class="mystery-friend" viewBox="0 0 160 150" role="img" aria-label="Silhouet van een onbekend vriendje"><use href="#mystery-friend"/></svg><span class="mystery-question" aria-hidden="true">?</span>
+            </div>
+            <div class="book-card__copy">
+              <p class="book-card__habitat">${habitat.label}</p>
+              <p class="book-card__name">Wie woont hier?</p>
+              <p class="book-card__mystery">Nog te ontmoeten</p>
             </div>
           </article>
         `;
       }
 
       return `
-        <button class="book-card book-card--interactive" data-book-open="${escapeHtml(entity.id)}" type="button">
-          <img src="${entity.thumbnail || entity.image}" alt="${escapeHtml(entity.name)}" loading="lazy" />
-          <div class="flex items-center gap-2">
-            <span class="rarity-pill rarity-pill--${entity.rarity}">${rarityLabel(entity.rarity)}</span>
-            <span class="status-chip status-chip--subtle">${escapeHtml(typeLabel(entity.type))}</span>
+        <button class="book-card book-card--interactive habitat-${habitat.theme}" data-book-open="${escapeHtml(entity.id)}" type="button" aria-label="Bekijk ${escapeHtml(entity.name)}">
+          <div class="book-card__art"><span class="book-card__number">${number}</span>${decoration}
+            <img src="${escapeHtml(entity.thumbnail || entity.image)}" alt="${escapeHtml(entity.name)}" loading="lazy" width="240" height="240" />
+            <span class="friend-stamp">Gevonden</span>
           </div>
-          <div>
-            <p class="book-card__name text-slate-800">${escapeHtml(entity.name)}</p>
-            <p class="book-card__description">${escapeHtml(entity.description)}</p>
+          <div class="book-card__copy">
+            <p class="book-card__habitat">${habitat.label}</p>
+            <p class="book-card__name">${escapeHtml(entity.name)}</p>
+            <span class="book-card__rarity"><i class="rarity-dot rarity-dot--${entity.rarity}" aria-hidden="true"></i>${rarityLabel(entity.rarity)}<span class="book-card__open" aria-hidden="true">&#8599;</span></span>
           </div>
         </button>
       `;
     })
-    .join("");
+    .join("") || `<div class="book-empty"><svg class="drawn-icon" viewBox="0 0 48 48" aria-hidden="true"><use href="#icon-map"/></svg><h3>Het eerste hoofdstuk is voor jou</h3><p>Je hebt nog geen vriendjes gevonden. Ga naar de kaart en maak buiten kennis met je eerste Sammeltje.</p><button class="soft-button soft-button--primary" type="button" data-book-walk>Terug naar de kaart</button></div>`;
+}
+
+function bookHabitat(biome) {
+  if (["kust", "haven", "wad", "kwelder"].includes(biome)) return { theme: "coast", label: "Langs het water" };
+  if (biome === "lucht") return { theme: "sky", label: "Op de zeewind" };
+  if (biome === "mystiek") return { theme: "mystic", label: "Vol eilandmagie" };
+  if (["duin", "dijk"].includes(biome)) return { theme: "dune", label: "Over duin en dijk" };
+  if (biome === "schaapsveld") return { theme: "meadow", label: "Tussen de schapen" };
+  return { theme: "field", label: "In het eilandgroen" };
 }
 
 function handleBookGridClick(event) {
+  if (event.target.closest("[data-book-walk]")) { switchView("map"); return; }
   const trigger = event.target.closest("[data-book-open]");
   if (!trigger) {
     return;
@@ -1095,6 +1132,7 @@ function openBookDetail(entity) {
   ui.bookDetailName.textContent = entity.name;
   ui.bookDetailImage.src = entity.image;
   ui.bookDetailImage.alt = `${entity.name} groot in het Sammeltjesboek`;
+  document.getElementById("book-detail-art").className = `book-detail-art habitat-${bookHabitat(entity.biome).theme}`;
   ui.bookDetailRarity.textContent = rarityLabel(entity.rarity);
   ui.bookDetailRarity.className = `rarity-pill rarity-pill--${entity.rarity}`;
   ui.bookDetailType.textContent = typeLabel(entity.type);
@@ -1318,14 +1356,14 @@ function getRarityColor(rarity) {
 
 function rarityLabel(rarity) {
   if (rarity === "legendary") {
-    return "Legendary";
+    return "Legendarisch";
   }
 
   if (rarity === "rare") {
-    return "Rare";
+    return "Zeldzaam";
   }
 
-  return "Common";
+  return "Gewoon";
 }
 
 function typeLabel(type) {

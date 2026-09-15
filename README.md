@@ -30,6 +30,8 @@ Thuis testen kan op de lokale game: open het bovenste paneel, kies **Thuis uitpr
 
 De verzameling blijft op dit toestel in de browser bewaard, zonder account. Oude vondsten behouden hun plek; alleen nieuwe vondsten krijgen een vinddatum. Het wissen van browsergegevens wist ook deze lokale voortgang.
 
+Het Sammeltjesboek toont je gevonden vriendjes eerst. Met **Gevonden** bekijk je alleen je eigen verzameling; **Alle vriendjes** toont ook de nog onbekende bewoners. Tik op een gevonden kaartje voor de volledige afbeelding en het verhaal. De kleuren en kleine tekeningen op de kaartjes verwijzen naar hun leefomgeving.
+
 ## Gedrag Aanpassen
 
 1. Kies bovenaan de werkplaats een Sammeltje. Standaard zie je alleen dat vriendje; **Toon alle Sammeltjes** geeft het overzicht.

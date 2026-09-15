@@ -8,7 +8,7 @@
       name="description"
       content="Mobiele verzamelgame op Wieringen met kaart, radar en een Sammeltjesboek."
     />
-    <meta name="theme-color" content="#efe5c7" />
+    <meta name="theme-color" content="#176b68" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -21,9 +21,23 @@
     />
     <link rel="stylesheet" href="tailwind.generated.css?v=20260711" />
     <link rel="stylesheet" href="vendor/leaflet/leaflet.css?v=1.9.4" />
-    <link rel="stylesheet" href="style.css?v=20260915" />
+    <link rel="stylesheet" href="style.css?v=20260915b" />
   </head>
   <body class="fantasy-ui antialiased">
+    <svg class="illustration-definitions" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+      <defs>
+        <symbol id="icon-map" viewBox="0 0 48 48"><path d="m5 11 12-5 14 5 12-5v31l-12 5-14-5-12 5Z" fill="#fff1ca"/><path d="m17 6 14 5v31l-14-5Z" fill="#afd9bc"/><path d="m5 11 12-5 14 5 12-5v31l-12 5-14-5-12 5Zm12-5v31m14-26v31"/><path d="M9 29c7-17 16 9 23-7" stroke-dasharray="2 4"/><path d="M36 14v7m-3-4 6 1" stroke="#c46b3e"/></symbol>
+        <symbol id="icon-book" viewBox="0 0 48 48"><path d="M9 8 36 5q5 0 5 5v29L14 43q-7 0-7-6V14q0-5 2-6Z" fill="#eebd58"/><path d="m14 36 27-3v6l-27 4q-7 0-7-6t7-6" fill="#fff7df"/><path d="m15 8 21-3q5 0 5 5v23l-27 4q-7 0-7-6V14q0-5 8-6Z" fill="#69bca5"/><path d="m14 9-1 23M31 6v13l-4-2-3 3V7" fill="#eebd58"/><path d="M22 29c-2-7 2-9 7-9 0 5-2 8-7 9Zm0 0-2 3"/></symbol>
+        <symbol id="icon-compass" viewBox="0 0 48 48"><path d="M20 6V3h8v3"/><circle cx="24" cy="26" r="19" fill="#efc768"/><circle cx="24" cy="26" r="14" fill="#e4f2e9"/><path d="m30 15-3 14-9 8 3-14Z" fill="#e48c64"/><path d="m21 23 6 6-9 8Z" fill="#77bcb6"/><circle cx="24" cy="26" r="2" fill="#fff6dc"/><path d="M24 10v3m0 26v3M8 26h3m26 0h3"/></symbol>
+        <symbol id="habitat-coast" viewBox="0 0 160 70"><path d="M3 32q10-14 20 0t20 0t20 0t20 0t20 0t20 0t20 0M12 49q10-14 20 0t20 0t20 0t20 0t20 0t20 0"/><path d="M113 15q7-8 14 0 7-8 14 0"/></symbol>
+        <symbol id="habitat-field" viewBox="0 0 160 70"><path d="M5 63q55-43 150-5M15 49l-4-18m4 13 8-9m-8 7-8-5M140 48l4-24m-2 13-8-8m8 11 9-6M55 51V27m0 8-7-6m7 13 8-8"/><circle cx="55" cy="22" r="5"/></symbol>
+        <symbol id="habitat-sky" viewBox="0 0 160 70"><path d="M14 44h43q10-14-7-17-7-21-23-4-19-2-13 21ZM99 31h40q10-12-6-15-7-17-20-4-20-1-14 19Z"/><path d="m75 14 1 7m-5-3 9-1"/></symbol>
+        <symbol id="habitat-mystic" viewBox="0 0 160 70"><path d="m25 15 3 10 10 3-10 3-3 10-3-10-10-3 10-3Zm101 17 3 8 8 3-8 3-3 8-3-8-8-3 8-3ZM88 9a17 17 0 1 0 13 27A20 20 0 0 1 88 9Z"/></symbol>
+        <symbol id="habitat-dune" viewBox="0 0 160 70"><path d="M4 59q32-43 73-7 38-39 79 3M33 41l-4-19m4 14 7-10m-7 11-9-7M123 39l3-25m-2 17-7-10m7 15 10-9"/></symbol>
+        <symbol id="habitat-meadow" viewBox="0 0 160 70"><path d="M9 55q65-31 143 1M24 35c-14-3-15-16-3-17-2-13 14-16 18-5 12-7 20 6 13 12 9 12-7 20-14 12-5 8-16 8-14-2ZM120 45V27m0 10-7-6m7 7 8-8"/></symbol>
+        <symbol id="mystery-friend" viewBox="0 0 160 150"><path d="M49 57Q24 40 15 63q11 17 32 13-12 24-5 42l-8 14q3 12 25 3 21 8 41 0 22 8 26-3l-9-15q8-25-4-41 22 4 33-13-9-24-34-6Q110 22 80 23 48 22 49 57Z" fill="currentColor" stroke="none"/><path d="M56 43q19-9 28-28 7 20 18 24" fill="currentColor" stroke="none"/></symbol>
+      </defs>
+    </svg>
     <div id="app" class="relative min-h-screen overflow-hidden" data-testid="game-app">
       <div id="map" class="absolute inset-0" data-testid="game-map"></div>
       <div class="pointer-events-none absolute inset-0 aurora-overlay"></div>
@@ -217,21 +231,23 @@
         class="view-panel game-view-panel hidden absolute inset-x-0 bottom-[96px] z-[920] px-4"
         data-testid="book-panel"
       >
-        <div class="mx-auto flex h-full max-w-md flex-col gap-4 soft-panel">
-          <div class="flex items-start justify-between gap-3">
-            <div>
-              <p class="text-[11px] uppercase tracking-[0.3em] text-emerald-700/75">Verzamelboek</p>
-              <h2 class="title-font text-2xl text-slate-800">Sammeltjesboek</h2>
-              <p id="book-summary" class="text-sm text-slate-600">
-                Je hebt nog geen Sammeltjes toegevoegd.
-              </p>
-            </div>
-            <button id="close-book-btn" class="soft-button soft-button--small" type="button">
-              Sluit
-            </button>
+        <div class="book-journal">
+          <div class="book-heading">
+            <div><p class="book-eyebrow">Verhalen van ons eiland</p><h2 class="title-font">Sammeltjesboek</h2></div>
+            <button id="close-book-btn" class="book-close" type="button" aria-label="Sluit Sammeltjesboek">Sluit <span aria-hidden="true">&times;</span></button>
           </div>
-
-          <div id="book-grid" class="grid grid-cols-2 gap-3 overflow-y-auto pb-1 sm:grid-cols-2" data-testid="book-grid"></div>
+          <div class="book-cover">
+            <div class="book-cover__copy"><p class="book-cover__title">Kleine vriendjes.<br>Grote avonturen.</p><p id="book-summary" role="status">Je eerste vriendje wacht op je.</p></div>
+            <div class="book-medallion" aria-hidden="true"><svg viewBox="0 0 48 48" class="drawn-icon"><use href="#icon-book"/></svg><span>WIERINGEN</span></div>
+          </div>
+          <div class="book-progress-row"><span id="book-progress-label">0 van 0 vriendjes</span><span>Jouw verzameling</span></div>
+          <progress id="book-progress" max="1" value="0" aria-label="Gevonden Sammeltjes" data-testid="book-progress"></progress>
+          <div class="book-filters" role="group" aria-label="Filter Sammeltjesboek">
+            <button type="button" data-book-filter="all" aria-pressed="true">Alle vriendjes <span id="book-total-count">0</span></button>
+            <button type="button" data-book-filter="found" aria-pressed="false">Gevonden <span id="book-found-count">0</span></button>
+          </div>
+          <div id="book-grid" class="book-grid" data-testid="book-grid"></div>
+          <p class="book-footer">Elk vriendje heeft een verhaal. Ontdek het buiten.</p>
         </div>
       </section>
 
@@ -289,7 +305,8 @@
           <p class="text-[11px] uppercase tracking-[0.3em] text-emerald-700/80">Sammeltjesboek</p>
           <h2 id="book-detail-name" class="title-font mt-1 text-3xl text-slate-800"></h2>
 
-          <div class="mt-4 overflow-hidden rounded-[28px] border border-white/70 bg-emerald-50/70 p-3 shadow-inner">
+          <div id="book-detail-art" class="book-detail-art habitat-field">
+            <span class="friend-stamp">Bekend vriendje</span>
             <img
               id="book-detail-image"
               class="book-detail-image h-64 w-full rounded-[22px] object-cover"
@@ -309,17 +326,17 @@
       </div>
 
       <nav class="absolute inset-x-0 bottom-0 z-[1000] p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]" aria-label="Hoofdnavigatie">
-        <div class="mx-auto flex max-w-md items-center justify-between gap-2 rounded-full border border-white/70 bg-white/85 p-2 shadow-2xl backdrop-blur-xl">
-          <button class="nav-button is-active" data-view="map" type="button">
-            <span class="nav-button__icon" aria-hidden="true">&#128506;</span>
+        <div class="island-navigation">
+          <button class="nav-button is-active" data-view="map" type="button" aria-current="page">
+            <svg class="nav-button__icon drawn-icon" aria-hidden="true" viewBox="0 0 48 48"><use href="#icon-map"/></svg>
             <span>Kaart</span>
           </button>
           <button class="nav-button" data-view="book" type="button">
-            <span class="nav-button__icon" aria-hidden="true">&#128216;</span>
+            <svg class="nav-button__icon drawn-icon" aria-hidden="true" viewBox="0 0 48 48"><use href="#icon-book"/></svg>
             <span>Sammeltjesboek</span>
           </button>
           <button class="nav-button" data-view="radar" type="button">
-            <span class="nav-button__icon" aria-hidden="true">&#10024;</span>
+            <svg class="nav-button__icon drawn-icon" aria-hidden="true" viewBox="0 0 48 48"><use href="#icon-compass"/></svg>
             <span>Radar</span>
           </button>
         </div>
@@ -329,7 +346,7 @@
     <script src="shared-config.js?v=20260711c"></script>
     <script src="game-rules.js?v=20260915"></script>
     <script src="terrain.js?v=20260915"></script>
-    <script src="app.js?v=20260915"></script>
+    <script src="app.js?v=20260915b"></script>
     <script>
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {
