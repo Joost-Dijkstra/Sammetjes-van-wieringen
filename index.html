@@ -6,7 +6,7 @@
     <title>Sammeltjes van Wieringen</title>
     <meta
       name="description"
-      content="Mobiele verzamelgame op Wieringen met kaart, radar en een Sammeltjesboek."
+      content="Ontmoet Sammeltjes op Wieringen, vul je boek en help je eilandvriendjes met kleine verzoekjes."
     />
     <meta name="theme-color" content="#176b68" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -21,14 +21,14 @@
     />
     <link rel="stylesheet" href="tailwind.generated.css?v=20260711" />
     <link rel="stylesheet" href="vendor/leaflet/leaflet.css?v=1.9.4" />
-    <link rel="stylesheet" href="style.css?v=20260915b" />
+    <link rel="stylesheet" href="style.css?v=20260917" />
   </head>
   <body class="fantasy-ui antialiased">
     <svg class="illustration-definitions" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
       <defs>
         <symbol id="icon-map" viewBox="0 0 48 48"><path d="m5 11 12-5 14 5 12-5v31l-12 5-14-5-12 5Z" fill="#fff1ca"/><path d="m17 6 14 5v31l-14-5Z" fill="#afd9bc"/><path d="m5 11 12-5 14 5 12-5v31l-12 5-14-5-12 5Zm12-5v31m14-26v31"/><path d="M9 29c7-17 16 9 23-7" stroke-dasharray="2 4"/><path d="M36 14v7m-3-4 6 1" stroke="#c46b3e"/></symbol>
         <symbol id="icon-book" viewBox="0 0 48 48"><path d="M9 8 36 5q5 0 5 5v29L14 43q-7 0-7-6V14q0-5 2-6Z" fill="#eebd58"/><path d="m14 36 27-3v6l-27 4q-7 0-7-6t7-6" fill="#fff7df"/><path d="m15 8 21-3q5 0 5 5v23l-27 4q-7 0-7-6V14q0-5 8-6Z" fill="#69bca5"/><path d="m14 9-1 23M31 6v13l-4-2-3 3V7" fill="#eebd58"/><path d="M22 29c-2-7 2-9 7-9 0 5-2 8-7 9Zm0 0-2 3"/></symbol>
-        <symbol id="icon-compass" viewBox="0 0 48 48"><path d="M20 6V3h8v3"/><circle cx="24" cy="26" r="19" fill="#efc768"/><circle cx="24" cy="26" r="14" fill="#e4f2e9"/><path d="m30 15-3 14-9 8 3-14Z" fill="#e48c64"/><path d="m21 23 6 6-9 8Z" fill="#77bcb6"/><circle cx="24" cy="26" r="2" fill="#fff6dc"/><path d="M24 10v3m0 26v3M8 26h3m26 0h3"/></symbol>
+        <symbol id="icon-request" viewBox="0 0 48 48"><path d="M5 16 24 4l19 12v24H5Z" fill="#e7b867"/><path d="M10 8h28v25H10Z" fill="#fff5d7"/><path d="M17 15h13m-13 5h10"/><path d="m5 16 19 15 19-15v24H5Z" fill="#a4d5bf"/><path d="m5 40 14-14m24 14L29 26"/><path d="M24 36c-10-5-7-12 0-7 7-5 10 2 0 7Z" fill="#d8815e"/></symbol>
         <symbol id="habitat-coast" viewBox="0 0 160 70"><path d="M3 32q10-14 20 0t20 0t20 0t20 0t20 0t20 0t20 0M12 49q10-14 20 0t20 0t20 0t20 0t20 0t20 0"/><path d="M113 15q7-8 14 0 7-8 14 0"/></symbol>
         <symbol id="habitat-field" viewBox="0 0 160 70"><path d="M5 63q55-43 150-5M15 49l-4-18m4 13 8-9m-8 7-8-5M140 48l4-24m-2 13-8-8m8 11 9-6M55 51V27m0 8-7-6m7 13 8-8"/><circle cx="55" cy="22" r="5"/></symbol>
         <symbol id="habitat-sky" viewBox="0 0 160 70"><path d="M14 44h43q10-14-7-17-7-21-23-4-19-2-13 21ZM99 31h40q10-12-6-15-7-17-20-4-20-1-14 19Z"/><path d="m75 14 1 7m-5-3 9-1"/></symbol>
@@ -98,50 +98,6 @@
         </div>
       </header>
 
-      <aside
-        id="mini-radar-panel"
-        class="game-mini-radar absolute left-4 z-[850] w-52 soft-panel soft-panel--compact collapsible-panel"
-        data-testid="mini-radar-panel"
-      >
-        <div class="panel-header-row">
-          <div>
-            <p class="text-[11px] uppercase tracking-[0.28em] text-emerald-700/70">Radar</p>
-            <p class="title-font text-lg text-slate-800">60 meter</p>
-          </div>
-          <div class="flex items-center gap-2">
-            <button id="open-radar-btn" class="soft-button soft-button--small" type="button">
-              Open
-            </button>
-            <button
-              id="toggle-mini-radar-panel"
-              class="panel-toggle-button"
-              type="button"
-              aria-expanded="true"
-              aria-controls="mini-radar-panel-body"
-            >
-              Inklappen
-            </button>
-          </div>
-        </div>
-
-        <div id="mini-radar-panel-body" class="panel-collapse-body">
-          <div class="mt-2 radar-shell radar-shell--mini">
-            <div class="radar-grid">
-              <div class="radar-ring radar-ring--inner"></div>
-              <div class="radar-ring radar-ring--outer"></div>
-              <div class="radar-cross radar-cross--vertical"></div>
-              <div class="radar-cross radar-cross--horizontal"></div>
-              <div class="radar-sweep"></div>
-              <div class="radar-center"></div>
-              <div id="mini-radar-signals" class="radar-signal-layer"></div>
-            </div>
-          </div>
-
-          <p id="mini-radar-summary" class="mt-2 text-xs text-slate-600">
-            Nog geen signalen binnen bereik.
-          </p>
-        </div>
-      </aside>
 
       <section
         id="scan-panel"
@@ -188,41 +144,13 @@
         Mijn locatie
       </button>
 
-      <section
-        id="radar-panel"
-        class="view-panel game-view-panel hidden absolute inset-x-0 bottom-[96px] z-[920] px-4"
-        data-testid="radar-panel"
-      >
-        <div class="mx-auto flex h-full max-w-md flex-col gap-4 soft-panel">
-          <div class="flex items-center justify-between gap-3">
-            <div>
-              <p class="text-[11px] uppercase tracking-[0.3em] text-emerald-700/75">Volle radar</p>
-              <h2 class="title-font text-2xl text-slate-800">Signalen rond jou</h2>
-              <p class="text-sm text-slate-600">
-                Binnen 300 meter worden Sammeltjes actief. Binnen 60 meter zie je ze hier.
-              </p>
-            </div>
-            <button id="close-radar-btn" class="soft-button soft-button--small" type="button">
-              Sluit
-            </button>
-          </div>
 
-          <div class="mx-auto w-full max-w-[320px] radar-shell radar-shell--full">
-            <div class="radar-grid">
-              <div class="radar-ring radar-ring--inner"></div>
-              <div class="radar-ring radar-ring--outer"></div>
-              <div class="radar-cross radar-cross--vertical"></div>
-              <div class="radar-cross radar-cross--horizontal"></div>
-              <div class="radar-sweep"></div>
-              <div class="radar-center"></div>
-              <div id="full-radar-signals" class="radar-signal-layer"></div>
-            </div>
-          </div>
-
-          <div>
-            <h3 class="title-font text-xl text-slate-800">Contacten</h3>
-            <div id="radar-list" class="mt-3 flex max-h-[220px] flex-col gap-2 overflow-y-auto pr-1"></div>
-          </div>
+      <section id="requests-panel" class="view-panel hidden absolute inset-x-0 z-[920] px-4" data-testid="requests-panel" aria-labelledby="requests-title">
+        <div class="book-journal requests-journal">
+          <div class="book-heading"><div><p class="book-eyebrow">Voor elkaar, op het eiland</p><h2 id="requests-title" class="title-font">Kleine verzoekjes</h2></div><button id="close-requests-btn" class="book-close" type="button" aria-label="Sluit verzoekjes">Sluit <span aria-hidden="true">&times;</span></button></div>
+          <div class="request-cover"><svg class="drawn-icon" viewBox="0 0 48 48" aria-hidden="true"><use href="#icon-request"/></svg><div><p>Een klein gebaar.<br>Een mooi ommetje.</p><span id="request-stamp-count">0 vriendschapsstempels</span></div></div>
+          <div id="requests-content" class="requests-content" data-testid="requests-content"></div>
+          <p class="book-footer">Eentje tegelijk. Op jouw tempo.</p>
         </div>
       </section>
 
@@ -284,6 +212,12 @@
 
           <p id="discovery-description" class="mt-4 text-sm leading-6 text-slate-600"></p>
 
+          <div id="encounter-request" class="encounter-request" hidden>
+            <p class="book-eyebrow">Een klein verzoekje</p>
+            <p id="encounter-request-text"></p>
+            <button id="accept-request-btn" class="soft-button" type="button" data-testid="accept-request-btn" hidden>Ik help je</button>
+          </div>
+
           <button id="collect-btn" class="soft-button soft-button--primary mt-5 w-full" type="button">
             Toevoegen aan Sammeltjesboek
           </button>
@@ -335,9 +269,9 @@
             <svg class="nav-button__icon drawn-icon" aria-hidden="true" viewBox="0 0 48 48"><use href="#icon-book"/></svg>
             <span>Sammeltjesboek</span>
           </button>
-          <button class="nav-button" data-view="radar" type="button">
-            <svg class="nav-button__icon drawn-icon" aria-hidden="true" viewBox="0 0 48 48"><use href="#icon-compass"/></svg>
-            <span>Radar</span>
+          <button class="nav-button" data-view="requests" type="button">
+            <svg class="nav-button__icon drawn-icon" aria-hidden="true" viewBox="0 0 48 48"><use href="#icon-request"/></svg>
+            <span>Verzoekjes <span id="request-nav-count" aria-label="1 actief verzoekje" hidden>1</span></span>
           </button>
         </div>
       </nav>
@@ -346,7 +280,8 @@
     <script src="shared-config.js?v=20260711c"></script>
     <script src="game-rules.js?v=20260915"></script>
     <script src="terrain.js?v=20260915"></script>
-    <script src="app.js?v=20260915b"></script>
+    <script src="friend-requests.js?v=20260917"></script>
+    <script src="app.js?v=20260917"></script>
     <script>
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {

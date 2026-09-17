@@ -1,7 +1,7 @@
 {
   "name": "Sammeltjes van Wieringen",
   "short_name": "Sammeltjes",
-  "description": "Locatie-gebaseerde verzamelgame op Wieringen met kaart, radar en Sammeltjesboek.",
+  "description": "Ontmoet Sammeltjes op Wieringen, vul je boek en help je eilandvriendjes met kleine verzoekjes.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

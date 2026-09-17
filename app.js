@@ -1,5 +1,6 @@
 const SHARED_CONFIG = window.SAMMELTJES_SHARED_CONFIG;
 const Rules = window.SammeltjesRules;
+const FriendRequests = window.SammeltjesRequests;
 
 if (!SHARED_CONFIG) {
   throw new Error("shared-config.js ontbreekt of is niet geladen.");
@@ -35,8 +36,6 @@ const WIERINGEN_VIEW_BOUNDS = createExpandedMapBounds(
 const state = {
   map: null,
   playerMarker: null,
-  radarCircle: null,
-  activationCircle: null,
   coastLayers: [],
   terrain: {
     ready: false,
@@ -57,6 +56,8 @@ const state = {
   entities: [],
   currentView: "map",
   bookFilter: "all",
+  requests: loadFriendRequests(),
+  requestOffer: null,
   discovered: new Set(loadDiscoveredIds()),
   discoveryQueue: [],
   pendingDiscoveries: new Set(),
@@ -123,13 +124,8 @@ function cacheDom() {
   ui.scanPanel = document.getElementById("scan-panel");
   ui.scanSummary = document.getElementById("scan-summary");
   ui.scanList = document.getElementById("scan-list");
-  ui.radarPanel = document.getElementById("radar-panel");
+  ui.requestsPanel = document.getElementById("requests-panel");
   ui.bookPanel = document.getElementById("book-panel");
-  ui.miniRadarPanel = document.getElementById("mini-radar-panel");
-  ui.miniRadarSignals = document.getElementById("mini-radar-signals");
-  ui.miniRadarSummary = document.getElementById("mini-radar-summary");
-  ui.fullRadarSignals = document.getElementById("full-radar-signals");
-  ui.radarList = document.getElementById("radar-list");
   ui.toast = document.getElementById("toast");
   ui.discoveryModal = document.getElementById("discovery-modal");
   ui.discoveryName = document.getElementById("discovery-name");
@@ -147,11 +143,9 @@ function cacheDom() {
   ui.navButtons = Array.from(document.querySelectorAll("[data-view]"));
   ui.recenterButton = document.getElementById("recenter-btn");
   ui.hudPanel = document.getElementById("hud-panel");
-  ui.miniRadarPanelToggle = document.getElementById("toggle-mini-radar-panel");
   ui.hudPanelToggle = document.getElementById("toggle-hud-panel");
   ui.scanPanelToggle = document.getElementById("toggle-scan-panel");
   ui.hudPanelBody = document.getElementById("hud-panel-body");
-  ui.miniRadarPanelBody = document.getElementById("mini-radar-panel-body");
   ui.scanPanelBody = document.getElementById("scan-panel-body");
   ui.encounterButton = document.getElementById("encounter-btn");
   ui.nearbyMessage = document.getElementById("nearby-message");
@@ -170,8 +164,9 @@ function bindUi() {
 
   ui.recenterButton.addEventListener("click", centerMapOnPlayer);
 
-  document.getElementById("open-radar-btn").addEventListener("click", () => switchView("radar"));
-  document.getElementById("close-radar-btn").addEventListener("click", () => switchView("map"));
+  document.getElementById("close-requests-btn").addEventListener("click", () => switchView("map"));
+  document.getElementById("accept-request-btn").addEventListener("click", acceptFriendRequest);
+  document.getElementById("requests-content").addEventListener("click", handleRequestClick);
   document.getElementById("close-book-btn").addEventListener("click", () => switchView("map"));
   document.getElementById("dismiss-discovery-btn").addEventListener("click", () => dismissDiscovery(true));
   document.getElementById("discovery-backdrop").addEventListener("click", () => dismissDiscovery(true));
@@ -188,7 +183,6 @@ function bindUi() {
   });
 
   bindCollapsiblePanel("hud", ui.hudPanel, ui.hudPanelToggle);
-  bindCollapsiblePanel("mini-radar", ui.miniRadarPanel, ui.miniRadarPanelToggle);
   bindCollapsiblePanel("scan", ui.scanPanel, ui.scanPanelToggle);
 
   ui.navButtons.forEach((button) => {
@@ -209,6 +203,12 @@ function bindUi() {
     }
   });
   window.addEventListener("storage", (event) => {
+    if (event.key === FriendRequests.STORAGE_KEY) {
+      state.requests = loadFriendRequests();
+      renderRequests();
+      renderEncounterRequest(state.entities.find((item) => item.id === state.currentDiscoveryId));
+      return;
+    }
     if (event.key !== DATA_VERSION_KEY || !event.newValue || event.newValue === state.lastDataVersion) {
       return;
     }
@@ -235,7 +235,6 @@ function bindCollapsiblePanel(key, panel, button) {
 function applyCollapsedPanelState() {
   const definitions = [
     ["hud", ui.hudPanel, ui.hudPanelToggle],
-    ["mini-radar", ui.miniRadarPanel, ui.miniRadarPanelToggle],
     ["scan", ui.scanPanel, ui.scanPanelToggle]
   ];
 
@@ -269,10 +268,7 @@ function setPanelCollapsed(key, panel, button, collapsed, persist = true) {
 function updateOverlayPositions() {
   const hudBottom = ui.hudPanel?.getBoundingClientRect().bottom || 126;
   document.documentElement.style.setProperty("--hud-clearance", `${Math.ceil(hudBottom + 10)}px`);
-  const radarBottom = ui.miniRadarPanel?.getBoundingClientRect().bottom || hudBottom;
-  const controlTop = window.matchMedia("(max-width: 767px)").matches
-    ? Math.max(hudBottom, radarBottom) + 10
-    : hudBottom + 10;
+  const controlTop = hudBottom + 10;
   document.documentElement.style.setProperty("--map-control-top", `${Math.ceil(controlTop)}px`);
 }
 
@@ -309,24 +305,6 @@ function initMap() {
     icon: playerIcon
   }).addTo(state.map);
 
-  state.activationCircle = L.circle([CONFIG.DEFAULT_CENTER.lat, CONFIG.DEFAULT_CENTER.lng], {
-    radius: CONFIG.ACTIVATION_RADIUS,
-    color: "#7ad8bb",
-    weight: 1.6,
-    opacity: 0.45,
-    fillColor: "#aef2d8",
-    fillOpacity: 0.04,
-    dashArray: "5 8"
-  }).addTo(state.map);
-
-  state.radarCircle = L.circle([CONFIG.DEFAULT_CENTER.lat, CONFIG.DEFAULT_CENTER.lng], {
-    radius: CONFIG.RADAR_RADIUS,
-    color: "#32b47c",
-    weight: 2.2,
-    opacity: 0.85,
-    fillColor: "#6af0ad",
-    fillOpacity: 0.08
-  }).addTo(state.map);
 
   state.map.on("click", (event) => {
     if (!state.demoMode) {
@@ -501,7 +479,7 @@ function replaceEntities(records) {
   }
   renderBook();
   renderScanList();
-  renderRadar();
+  renderRequests();
   updateCounters();
   simulationTick(true);
 }
@@ -583,8 +561,6 @@ function setPlayerPosition(latlng, options = {}) {
   state.playerPosition = nextPosition;
 
   state.playerMarker.setLatLng(nextPosition);
-  state.activationCircle.setLatLng(nextPosition);
-  state.radarCircle.setLatLng(nextPosition);
 
   if (options.source !== "fallback") {
     void maybeRefreshTerrain();
@@ -693,7 +669,7 @@ function hasUsablePosition() {
 }
 
 function canMeet(entity) {
-  return Boolean(entity && hasUsablePosition() && entity.enabled && entity.availableNow &&
+  return Boolean(entity && hasUsablePosition() && entity.enabled && Rules.available(entity) &&
     distanceMeters(state.playerPosition, entityPoint(entity)) <= CONFIG.DISCOVERY_RADIUS);
 }
 
@@ -738,7 +714,7 @@ function simulationTick(forceUi = false) {
 
   const now = performance.now();
   if (forceUi || now - state.lastUiRenderAt >= CONFIG.UI_UPDATE_MS) {
-    renderRadar();
+    renderRequests();
     renderScanList();
     updateCounters();
     renderEncounterPrompt();
@@ -866,6 +842,7 @@ function showNextDiscovery() {
   ui.discoveryRarity.textContent = rarityLabel(entity.rarity);
   ui.discoveryRarity.className = `rarity-pill rarity-pill--${entity.rarity}`;
   ui.discoveryType.textContent = typeLabel(entity.type);
+  renderEncounterRequest(entity);
   ui.discoveryModal.classList.remove("hidden");
   ui.discoveryModal.classList.add("flex");
   state.lastFocusedElement = document.activeElement;
@@ -901,6 +878,11 @@ function collectCurrentDiscovery() {
     return;
   }
 
+  if (!canMeet(entity)) {
+    showToast("Kom weer rustig dichtbij om dit vriendje te begroeten.");
+    dismissDiscovery(false);
+    return;
+  }
   entity.collected = true;
   const alreadyKnown = state.discovered.has(entity.id);
   state.discovered.add(entity.id);
@@ -912,87 +894,141 @@ function collectCurrentDiscovery() {
   syncEntityMarker(entity);
   renderBook();
   renderScanList();
-  renderRadar();
   updateCounters();
-  showToast(alreadyKnown ? `${entity.name} is blij je weer te zien.` : `${entity.name} heeft een plekje in je Sammeltjesboek.`);
+  state.requests = loadFriendRequests();
+  const requestGiver = state.entities.find((item) => item.id === state.requests.active?.giverId);
+  const completed = alreadyKnown ? FriendRequests.complete(state.requests, entity.id, canMeet(entity) && FriendRequests.enabled(requestGiver)) : state.requests;
+  const requestFinished = completed !== state.requests;
+  if (requestFinished && !saveFriendRequests(completed)) return;
+  renderRequests();
+  showToast(requestFinished ? "Groet bezorgd! Je nieuwe stempel staat bij Verzoekjes." : alreadyKnown ? `${entity.name} is blij je weer te zien.` : `${entity.name} heeft een plekje in je Sammeltjesboek.`);
   dismissDiscovery(false);
   renderEncounterPrompt();
 }
 
-function renderRadar() {
-  const contacts = state.entities
-    .filter((entity) => entity.enabled && entity.radarVisible)
-    .sort((left, right) => left.distance - right.distance);
 
-  renderRadarSignals(ui.miniRadarSignals, contacts, false);
-  renderRadarSignals(ui.fullRadarSignals, contacts, true);
-
-  ui.miniRadarSummary.textContent = contacts.length
-    ? `${contacts.length} signaal${contacts.length === 1 ? "" : "en"} binnen ${CONFIG.RADAR_RADIUS} meter.`
-    : "Nog geen signalen binnen bereik.";
-
-  if (!contacts.length) {
-    ui.radarList.innerHTML = '<p class="contact-chip__meta">Nog geen signalen binnen 60 meter. Loop verder over Wieringen.</p>';
-    return;
-  }
-
-  ui.radarList.innerHTML = contacts
-    .map((entity) => {
-      const direction = cardinalDirection(bearingDegrees(state.playerPosition, entityPoint(entity)));
-      return `
-        <div class="contact-chip contact-chip--${entity.rarity}">
-          <span class="contact-chip__dot" style="background:${getRarityColor(entity.rarity)}"></span>
-          <div>
-            <div class="font-extrabold text-slate-800">${escapeHtml(entity.name)}</div>
-            <div class="contact-chip__meta">${escapeHtml(typeLabel(entity.type))}</div>
-          </div>
-          <div class="text-right">
-            <div class="font-extrabold text-slate-800">${Math.round(entity.distance)} m</div>
-            <div class="contact-chip__meta">${direction}</div>
-          </div>
-        </div>
-      `;
-    })
-    .join("");
+function loadFriendRequests() {
+  try { return FriendRequests.normalize(JSON.parse(localStorage.getItem(FriendRequests.STORAGE_KEY) || "null")); }
+  catch (error) { return FriendRequests.normalize(null); }
 }
 
-function renderRadarSignals(container, contacts, showDistance) {
-  if (!container.closest("section, aside")?.getClientRects().length) return;
-  const gridSize = container.parentElement.clientWidth || (showDistance ? 312 : 128);
-  const center = gridSize / 2;
-  const maxRadiusPx = center * 0.86;
+function saveFriendRequests(progress) {
+  try {
+    const next = FriendRequests.normalize(progress);
+    localStorage.setItem(FriendRequests.STORAGE_KEY, JSON.stringify(next));
+    state.requests = next;
+    return true;
+  } catch (error) {
+    showToast("Je verzoekje kon niet worden opgeslagen. Probeer het nog eens.");
+    return false;
+  }
+}
 
-  if (!state.playerPosition) {
-    container.innerHTML = "";
+function renderEncounterRequest(entity) {
+  const note = document.getElementById("encounter-request");
+  const button = document.getElementById("accept-request-btn");
+  state.requestOffer = null;
+  note.hidden = true;
+  button.hidden = true;
+  if (!entity || !state.discovered.has(entity.id)) return;
+  const active = state.requests.active;
+  if (active?.targetId === entity.id) {
+    const giver = state.entities.find((item) => item.id === active.giverId);
+    note.hidden = false;
+    document.getElementById("encounter-request-text").textContent = `Je hebt een groet van ${giver?.name || "een eilandvriendje"} bij je. Begroet ${entity.name} om het verzoekje af te ronden.`;
     return;
   }
+  const offer = FriendRequests.offer(entity, state.entities, state.discovered, state.requests);
+  if (!offer) return;
+  state.requestOffer = offer;
+  const target = state.entities.find((item) => item.id === offer.targetId);
+  note.hidden = false;
+  button.hidden = false;
+  document.getElementById("encounter-request-text").textContent = FriendRequests.tale(entity.biome).message.replace("{target}", target.name);
+}
 
-  const html = contacts
-    .map((entity) => {
-      const bearing = bearingDegrees(state.playerPosition, entityPoint(entity));
-      const angleRad = (bearing * Math.PI) / 180;
-      const scaledRadius = Math.max(10, (entity.distance / CONFIG.RADAR_RADIUS) * maxRadiusPx);
-      const x = center + Math.sin(angleRad) * scaledRadius;
-      const y = center - Math.cos(angleRad) * scaledRadius;
-      const distanceBadge = showDistance
-        ? `<span class="radar-distance-badge">${Math.round(entity.distance)}m</span>`
-        : "";
-
-      return `
-        <div
-          class="radar-signal radar-signal--${entity.rarity}"
-          style="left:${x}px; top:${y}px;"
-          title="${escapeHtml(entity.name)}"
-        >
-          ${distanceBadge}
-        </div>
-      `;
-    })
-    .join("");
-  if (container.dataset.rendered !== html) {
-    container.innerHTML = html;
-    container.dataset.rendered = html;
+function acceptFriendRequest() {
+  const offered = state.requestOffer;
+  state.requests = loadFriendRequests();
+  const giver = state.entities.find((item) => item.id === state.currentDiscoveryId);
+  const fresh = FriendRequests.offer(giver, state.entities, state.discovered, state.requests);
+  if (!canMeet(giver) || !offered || fresh?.targetId !== offered.targetId || fresh?.giverId !== offered.giverId) {
+    renderEncounterRequest(giver);
+    showToast("Dit verzoekje is nu niet beschikbaar. Kijk rustig opnieuw.");
+    return;
   }
+  if (!saveFriendRequests({...state.requests, active:fresh})) return;
+  dismissDiscovery(false);
+  switchView("requests");
+}
+
+function requestPortrait(entity) {
+  return entity ? `<img src="${escapeHtml(entity.thumbnail || entity.image)}" alt="${escapeHtml(entity.name)}" width="72" height="72" />` : "";
+}
+
+function renderRequests() {
+  const content = document.getElementById("requests-content");
+  if (!content) return;
+  const active = state.requests.active;
+  const completed = state.requests.completed;
+  document.getElementById("request-nav-count").hidden = !active;
+  document.getElementById("request-stamp-count").textContent = `${completed.length} ${completed.length === 1 ? "vriendschapsstempel" : "vriendschapsstempels"}`;
+  if (state.currentView !== "requests") return;
+  let html = "";
+  if (active) {
+    const giver = state.entities.find((item) => item.id === active.giverId);
+    const target = state.entities.find((item) => item.id === active.targetId);
+    const reachable = FriendRequests.enabled(giver) && FriendRequests.enabled(target) && state.discovered.has(active.targetId);
+    const awake = reachable && Rules.available(target);
+    const message = !reachable ? "Een van deze vriendjes is niet meer beschikbaar. Je kunt het verzoekje zonder nadeel teruggeven."
+      : !awake ? `${target.name} rust nu. Kom later terug; je verzoekje blijft bewaard.`
+      : `Ga naar ${target.name} en kies van dichtbij Begroeten. Met je groet maak je het verzoekje af.`;
+    html += `<article class="request-letter" data-testid="active-request">
+      <p class="book-eyebrow">Jouw kleine ommetje</p><h3>${escapeHtml(FriendRequests.tale(giver?.biome).title)}</h3>
+      <div class="request-friends">${requestPortrait(giver)}<span aria-hidden="true">&#8594;</span>${requestPortrait(target)}</div>
+      <p class="request-from">Van ${escapeHtml(giver?.name || "een eilandvriendje")} voor ${escapeHtml(target?.name || "een eilandvriendje")}</p>
+      <p class="request-instruction" role="status">${escapeHtml(message)}</p>
+      <div class="request-actions">${reachable ? `<button class="soft-button soft-button--primary" data-request-locate="${escapeHtml(target.id)}" type="button">Bekijk de woonplek</button>` : ""}<button class="request-return" data-request-cancel type="button">Verzoekje teruggeven</button></div>
+      <p class="request-footnote">Geen tijdslimiet. Wandel op openbare paden.</p></article>`;
+  } else {
+    const offers = state.entities.filter((item) => Rules.available(item) && FriendRequests.offer(item, state.entities, state.discovered, state.requests));
+    offers.sort((a,b) => hasUsablePosition() ? distanceMeters(state.playerPosition,a)-distanceMeters(state.playerPosition,b) : a.id.localeCompare(b.id));
+    html += `<div class="request-intro"><h3>${completed.length ? "Nog een vriendelijk ommetje?" : "Een groet doet goed"}</h3><p>${state.discovered.size < 2 ? "Ontdek eerst twee Sammeltjes. Als bekende vriendjes bij elkaar in de buurt wonen, kun je een groet voor ze overbrengen." : "Begroet een bekend vriendje op de kaart. Soms heeft het een klein verzoekje voor je. Jij kiest of je helpt."}</p></div>`;
+    if (offers.length) {
+      html += `<p class="request-section-label">Deze vriendjes hebben iets te vragen</p>`;
+      html += offers.slice(0,3).map((giver) => `<button class="request-host" type="button" data-request-locate="${escapeHtml(giver.id)}">${requestPortrait(giver)}<span><strong>${escapeHtml(giver.name)}</strong><small>Ga langs voor een verzoekje</small></span><span aria-hidden="true">&#8599;</span></button>`).join("");
+    } else {
+      html += `<p class="request-footnote">Nu geen verzoekjes beschikbaar. Ontmoet meer vriendjes of kijk later nog eens; er hoeft niets vandaag.</p><button class="soft-button" type="button" data-request-map>Verder wandelen</button>`;
+    }
+  }
+  if (completed.length) {
+    html += `<h3 class="request-section-label">Kleine gebaren, mooie verhalen</h3>`;
+    html += [...completed].reverse().map((request,index) => {
+      const giver = state.entities.find((item) => item.id === request.giverId);
+      const target = state.entities.find((item) => item.id === request.targetId);
+      const tale = FriendRequests.tale(giver?.biome);
+      const date = new Intl.DateTimeFormat("nl-NL", {dateStyle:"long",timeZone:"Europe/Amsterdam"}).format(new Date(request.completedAt));
+      return `<details class="request-memory" ${index === 0 ? "open" : ""}><summary><span class="request-stamp" aria-hidden="true">&#10003;</span><span>${escapeHtml(tale.title)}<small>${escapeHtml(date)}</small></span></summary><p>${escapeHtml(tale.story)}</p><p class="request-footnote">${escapeHtml(giver?.name || "Een eilandvriendje")} &amp; ${escapeHtml(target?.name || "een eilandvriendje")}</p></details>`;
+    }).join("");
+  }
+  // Keep focus, expanded memories and scroll position while the simulation ticks.
+  if (content.dataset.rendered !== html) { content.innerHTML = html; content.dataset.rendered = html; }
+}
+
+function handleRequestClick(event) {
+  if (event.target.closest("[data-request-map]")) { switchView("map"); return; }
+  if (event.target.closest("[data-request-cancel]")) {
+    if (!window.confirm("Wil je dit verzoekje teruggeven? Je verliest geen stempels en kunt later opnieuw helpen.")) return;
+    state.requests = loadFriendRequests();
+    if (saveFriendRequests({...state.requests, active:null})) renderRequests();
+    return;
+  }
+  const locate = event.target.closest("[data-request-locate]");
+  const entity = state.entities.find((item) => item.id === locate?.dataset.requestLocate);
+  if (!entity || !state.discovered.has(entity.id)) return;
+  switchView("map");
+  state.map.setView([entity.lat, entity.lng], 17);
+  showToast(`Woonplek van ${entity.name}. Dit vriendje kan in de buurt rondlopen.`);
 }
 
 function renderScanList() {
@@ -1162,6 +1198,9 @@ function restoreLastFocus() {
 }
 
 function switchView(view) {
+  window.clearTimeout(state.toastTimer);
+  ui.toast.classList.remove("is-visible");
+  ui.toast.classList.add("hidden");
   state.currentView = view;
   if (view !== "map" && window.matchMedia("(max-width: 767px)").matches) {
     setPanelCollapsed("hud", ui.hudPanel, ui.hudPanelToggle, true);
@@ -1176,14 +1215,13 @@ function switchView(view) {
   });
 
   ui.bookPanel.classList.toggle("hidden", view !== "book");
-  ui.radarPanel.classList.toggle("hidden", view !== "radar");
-  ui.miniRadarPanel.classList.toggle("hidden", view !== "map");
+  ui.requestsPanel.classList.toggle("hidden", view !== "requests");
   ui.scanPanel.classList.toggle("hidden", view !== "map");
   ui.recenterButton.classList.toggle("hidden", view !== "map");
   ui.recenterButton.hidden = view !== "map";
   document.body.dataset.gameView = view;
   document.getElementById("nearby-panel").hidden = view !== "map";
-  if (view === "radar") renderRadar();
+  if (view === "requests") renderRequests();
 }
 
 function updateCounters() {
@@ -1252,7 +1290,6 @@ function loadCollapsedPanelState() {
   const compactScreen = window.matchMedia("(max-width: 767px)").matches;
   const defaults = {
     hud: compactScreen,
-    "mini-radar": compactScreen,
     scan: compactScreen
   };
 
@@ -1651,7 +1688,7 @@ function installTestApi() {
       }
       renderBook();
       renderScanList();
-      renderRadar();
+      renderRequests();
       simulationTick(true);
       return true;
     },

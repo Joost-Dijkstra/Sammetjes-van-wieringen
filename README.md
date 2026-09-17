@@ -24,13 +24,23 @@ Je kaart verschuift niet automatisch. **Mijn locatie** brengt je terug naar je p
 
 Een signaal verschijnt binnen 300 meter. Binnen 60 meter zie je het Sammeltje en zijn reactie. Binnen 20 meter kies je zelf **Kennismaken**. Het vriendje krijgt een plek in je boek. Bij een volgende ontmoeting kun je het **Begroeten**; de verzameling telt het maar eenmaal.
 
-De echte spelmodus wacht op een recente GPS-positie met een gemelde nauwkeurigheid van maximaal 50 meter. Kaart en radar zijn noordgericht. Bij wisselende GPS kan de gemeten afstand afwijken van de werkelijke afstand.
+De echte spelmodus wacht op een recente GPS-positie met een gemelde nauwkeurigheid van maximaal 50 meter. De kaart is noordgericht. Bij wisselende GPS kan de gemeten afstand afwijken van de werkelijke afstand.
 
 Thuis testen kan op de lokale game: open het bovenste paneel, kies **Thuis uitproberen** en zet **Demo besturen** aan. Gebruik de pijltjestoetsen of klik op de kaart. **Toon alles** is eveneens een lokale testoptie.
 
 De verzameling blijft op dit toestel in de browser bewaard, zonder account. Oude vondsten behouden hun plek; alleen nieuwe vondsten krijgen een vinddatum. Het wissen van browsergegevens wist ook deze lokale voortgang.
 
 Het Sammeltjesboek toont je gevonden vriendjes eerst. Met **Gevonden** bekijk je alleen je eigen verzameling; **Alle vriendjes** toont ook de nog onbekende bewoners. Tik op een gevonden kaartje voor de volledige afbeelding en het verhaal. De kleuren en kleine tekeningen op de kaartjes verwijzen naar hun leefomgeving.
+
+## Kleine Verzoekjes
+
+Het aparte radarscherm en de afstandscirkels op de speelkaart zijn vervangen door **Verzoekjes**. De bestaande ontmoetingsafstanden en gedragsregels blijven hetzelfde. De technische proefwandeling in de admin houdt zijn bereikcirkel.
+
+Begroet een bekend vriendje van dichtbij. Als er een ander bekend, wakker vriendje binnen 1,5 km van zijn woonplek woont, kan het vragen een groet over te brengen. Kies **Ik help je** om dat verzoekje aan te nemen. Er is maximaal een actief verzoekje, zonder tijdslimiet. **Bekijk de woonplek** verplaatst alleen de kaart, nooit je speler. Dit is geen routeplanner; blijf op openbare paden.
+
+Ga naar het andere vriendje, kies **Begroeten** en bevestig de ontmoeting. Alleen binnen 20 meter en met bruikbare GPS (of lokale demo) telt de groet. Je verdient een verhaaltje en een vriendschapsstempel bij Verzoekjes. Per vragend Sammeltje kun je eenmaal een stempel verdienen: geen dagelijkse druk of eindeloos dezelfde opdracht.
+
+Slapende vriendjes wachten tot een later bezoek. Verwijderde of uitgeschakelde vriendjes worden duidelijk gemeld. Je kunt een verzoekje altijd zonder straf teruggeven. Verzoekjes en stempels blijven lokaal op dit toestel bewaard, apart van je bestaande verzameling. De verhalen per leefgebied staan overzichtelijk in `friend-requests.js`. De videoproef is nog niet ingebouwd.
 
 ## Gedrag Aanpassen
 
@@ -40,7 +50,7 @@ Het Sammeltjesboek toont je gevonden vriendjes eerst. Met **Gevonden** bekijk je
 4. Klik op **Opslaan op computer** wanneer je tevreden bent.
 5. Klik op **Publiceren naar telefoonapp**, controleer het wijzigingsoverzicht en publiceer.
 
-**Nieuwsgierig** komt naar je toe en wacht op circa 12 meter. **Bang** wijkt 3 seconden uit en rust 6 seconden. **Verlegen** stopt zodra je binnen de radar komt. Een vriendje op een vaste plek beweegt niet; de bijbehorende instellingen zijn daarom uitgeschakeld.
+**Nieuwsgierig** komt naar je toe en wacht op circa 12 meter. **Bang** wijkt 3 seconden uit en rust 6 seconden. **Verlegen** stopt zodra je binnen 60 meter komt. Een vriendje op een vaste plek beweegt niet; de bijbehorende instellingen zijn daarom uitgeschakeld.
 
 De woonradius is 50-500 meter. Gewoon klikken voegt niets toe: gebruik daarvoor **Nieuw Sammeltje**. Verplaatsen kan door slepen of met **Verplaats naar**. **Ongedaan maken** herstelt eerdere bewerkingen in deze sessie.
 
