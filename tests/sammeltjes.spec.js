@@ -64,6 +64,141 @@ async function visitWolkje(page) {
   await page.getByTestId('entity-marker-wieringer-wolkje').click();
 }
 
+test('Bekende vriendjes herkennen je na herladen zonder een bezorging te verzinnen',async({page,context})=>{
+  await context.addInitScript(()=>localStorage.setItem('sammeltjes-wieringen-discovered',JSON.stringify(['molenmaatje'])));
+  await game(page,true);
+  await page.getByTestId('entity-marker-molenmaatje').click();
+  await expect(page.getByTestId('encounter-greeting')).toHaveAttribute('data-kind','familiar');
+  await expect(page.locator('#encounter-greeting-text')).toContainText('weer');
+  await expect(page.locator('#discovery-description')).toBeHidden();
+  await page.getByRole('button',{name:'Fijn je weer te zien',exact:true}).click();
+  await page.reload(); await page.waitForFunction(()=>!!window.__SAMMELTJES_TEST_API__);
+  await page.evaluate(point=>{
+    const api=window.__SAMMELTJES_TEST_API__; api.setDemoMode(true); api.setPlayerPosition(point.lat,point.lng); api.setMapCenter(point.lat,point.lng,17);
+  },home);
+  await page.getByTestId('entity-marker-molenmaatje').click();
+  await expect(page.getByTestId('encounter-greeting')).toHaveAttribute('data-kind','familiar');
+  await expect(page.locator('#found-counter')).toHaveText('1 / 20');
+  expect(await page.evaluate(()=>localStorage.getItem('sammeltjes-friend-requests-v1'))).toBe(null);
+});
+
+test('Een bezorgd cadeau krijgt bij beide vriendjes een persoonlijk vervolg, ook offline',async({page,context})=>{
+  const errors=errorsFor(page);
+  await requestGame(page,context);
+  await acceptRequest(page); await visitWolkje(page);
+  await page.getByRole('button',{name:'Fijn je weer te zien',exact:true}).click();
+  await page.reload(); await page.waitForFunction(()=>!!window.__SAMMELTJES_TEST_API__);
+  await page.clock.setFixedTime(new Date('2026-09-16T17:00:00Z'));
+  await context.setOffline(true);
+  // Page and images are already loaded; the conversation needs no online service.
+  await visitWolkje(page);
+  await expect(page.getByTestId('encounter-greeting')).toHaveAttribute('data-kind','memory');
+  await expect(page.locator('#encounter-greeting-text')).toContainText('lievelingsstukje');
+  await page.getByRole('button',{name:'Fijn je weer te zien',exact:true}).click();
+  await page.evaluate(point=>{
+    const api=window.__SAMMELTJES_TEST_API__; api.setPlayerPosition(point.lat,point.lng); api.setMapCenter(point.lat,point.lng,17);
+  },home);
+  await page.getByTestId('entity-marker-havenpluimpje').click();
+  await expect(page.getByTestId('encounter-greeting')).toHaveAttribute('data-kind','memory');
+  await expect(page.locator('#encounter-greeting-text')).toContainText('bij Wieringer Wolkje');
+  await expect(page.locator('#request-stamp-count')).toHaveText('1 vriendschapsstempel');
+  expect(errors).toEqual([]);
+});
+
+async function reactionGame(page,context,behavior='curious') {
+  const items=require('../data/sammeltjes.json').map(item=>item.id==='kwelder-sprietje'
+    ? {...item,...home,type:'fixed',speedKmh:0,behavior,active:true,availabilityMode:'all-day'} : {...item,active:false});
+  await context.route('**/data/sammeltjes.json*',route=>route.fulfill({json:items}));
+  await context.addInitScript(()=>localStorage.setItem('sammeltjes-wieringen-discovered',JSON.stringify(['kwelder-sprietje'])));
+  await page.clock.install({time:new Date('2026-09-15T17:00:00Z')});
+  await page.setViewportSize({width:390,height:844});
+  await game(page,true);
+  if(await page.locator('#toggle-hud-panel').getAttribute('aria-expanded')==='true') await page.locator('#toggle-hud-panel').click();
+  return items;
+}
+
+test('Een rustig kaartballonnetje blijft klikbaar, verschuift geen marker en stopt bij een schermwissel',async({page,context})=>{
+  const errors=errorsFor(page);
+  await reactionGame(page,context);
+  const marker=page.getByTestId('entity-marker-kwelder-sprietje');
+  const position=await marker.evaluate(el=>el.style.transform);
+  await page.clock.runFor(1900);
+  await expect(page.getByTestId('map-reaction')).toBeVisible();
+  await expect(page.getByTestId('map-reaction')).toHaveAttribute('data-entity-id','kwelder-sprietje');
+  await expect(marker).toHaveAttribute('data-reaction-motion','wave');
+  await expect(page.getByTestId('map-reaction')).toHaveCSS('pointer-events','none');
+  expect(await marker.evaluate(el=>el.style.transform)).toBe(position);
+  const boxes=await page.evaluate(()=>{
+    const bubble=document.querySelector('#map-reaction').getBoundingClientRect();
+    return [document.querySelector('#hud-panel'),document.querySelector('#nearby-panel'),document.querySelector('nav')].map(el=>{
+      const b=el.getBoundingClientRect();return bubble.left<b.right&&bubble.right>b.left&&bubble.top<b.bottom&&bubble.bottom>b.top;
+    });
+  });
+  expect(boxes).toEqual([false,false,false]);
+  await expect(page.getByTestId('map-reaction')).toHaveCSS('opacity','1');
+  await page.screenshot({path:'output/friendly-map-reaction.png'});
+  await marker.click();
+  await expect(page.getByTestId('discovery-modal')).toBeVisible();
+  await expect(page.getByTestId('map-reaction')).toBeHidden();
+  await expect(page.getByTestId('encounter-greeting')).toBeVisible();
+  await expect(page.locator('#discovery-modal > .soft-panel')).toHaveCSS('opacity','1');
+  await page.screenshot({path:'output/friendly-return-greeting.png'});
+  await page.getByRole('button',{name:'Fijn je weer te zien',exact:true}).click();
+  await page.locator('[data-view="book"]').click();
+  await page.clock.runFor(35000);
+  await expect(page.getByTestId('map-reaction')).toBeHidden();
+  expect(errors).toEqual([]);
+});
+
+test('Verlegen en bange reacties respecteren minder beweging en tonen geen zwaaihand',async({page,context})=>{
+  const items=await reactionGame(page,context,'shy');
+  await page.emulateMedia({reducedMotion:'reduce'});
+  await page.clock.runFor(1900);
+  const marker=page.getByTestId('entity-marker-kwelder-sprietje');
+  await expect(page.getByTestId('map-reaction')).toBeVisible();
+  await expect(marker).toHaveAttribute('data-reaction-motion','nod');
+  await expect(marker.locator('.companion-portrait')).toHaveCSS('animation-name','none');
+  await expect(marker.locator('.companion-wave')).toBeHidden();
+  await expect(page.getByTestId('map-reaction')).toHaveCSS('animation-name','none');
+  items.find(item=>item.id==='kwelder-sprietje').behavior='scared';
+  await page.reload(); await page.waitForFunction(()=>!!window.__SAMMELTJES_TEST_API__);
+  await page.evaluate(point=>{
+    const api=window.__SAMMELTJES_TEST_API__;api.setDemoMode(true);api.setPlayerPosition(point.lat,point.lng);api.setMapCenter(point.lat,point.lng,17);
+  },home);
+  await page.clock.runFor(1900);
+  await expect(marker).toHaveAttribute('data-reaction-motion','peek');
+  await expect(page.getByTestId('map-reaction')).toContainText('O, jij bent het!');
+  await expect(marker.locator('.companion-wave')).toBeHidden();
+});
+
+test('Reacties verdwijnen buiten bereik, buiten beeld en bij slapen',async({page,context})=>{
+  const items=await reactionGame(page,context);
+  await page.clock.runFor(1900);
+  await expect(page.getByTestId('map-reaction')).toBeVisible();
+  await page.evaluate(()=>window.__SAMMELTJES_TEST_API__.setMapCenter(52.9,4.94,17));
+  await page.clock.runFor(300);
+  await expect(page.getByTestId('map-reaction')).toBeHidden();
+  await page.evaluate(point=>window.__SAMMELTJES_TEST_API__.setMapCenter(point.lat,point.lng,17),home);
+  await page.clock.runFor(123000);
+  await expect(page.getByTestId('map-reaction')).toBeVisible();
+  await page.evaluate(()=>window.__SAMMELTJES_TEST_API__.setPlayerPosition(52.9,4.94));
+  await expect(page.getByTestId('map-reaction')).toBeHidden();
+  items.find(item=>item.id==='kwelder-sprietje').availabilityMode='morning';
+  await page.evaluate(()=>window.__SAMMELTJES_TEST_API__.refreshData());
+  await page.evaluate(point=>window.__SAMMELTJES_TEST_API__.setPlayerPosition(point.lat,point.lng),home);
+  await page.clock.runFor(124000);
+  await expect(page.getByTestId('map-reaction')).toBeHidden();
+  await expect(page.getByTestId('entity-marker-kwelder-sprietje')).toHaveCount(0);
+});
+
+test('Zonder bruikbare GPS geeft zelfs Toon alles geen persoonlijke kaartreacties',async({page})=>{
+  await page.clock.install({time:new Date('2026-09-15T17:00:00Z')});
+  await game(page);
+  await page.evaluate(()=>window.__SAMMELTJES_TEST_API__.setShowAll(true));
+  await page.clock.runFor(9000);
+  await expect(page.getByTestId('map-reaction')).toBeHidden();
+});
+
 test('Verzoekjes vervangen de radar, ook zonder gevonden vriendjes', async ({page}) => {
   const errors=errorsFor(page);
   await page.setViewportSize({width:320,height:568});

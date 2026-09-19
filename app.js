@@ -1,6 +1,7 @@
 const SHARED_CONFIG = window.SAMMELTJES_SHARED_CONFIG;
 const Rules = window.SammeltjesRules;
 const FriendRequests = window.SammeltjesRequests;
+const Personality = window.SammeltjesPersonality;
 
 if (!SHARED_CONFIG) {
   throw new Error("shared-config.js ontbreekt of is niet geladen.");
@@ -58,6 +59,8 @@ const state = {
   bookFilter: "all",
   requests: loadFriendRequests(),
   requestOffer: null,
+  reactions: Personality.createReactions(),
+  reactionEntityId: null,
   discovered: new Set(loadDiscoveredIds()),
   discoveryQueue: [],
   pendingDiscoveries: new Set(),
@@ -133,6 +136,8 @@ function cacheDom() {
   ui.discoveryRarity = document.getElementById("discovery-rarity");
   ui.discoveryType = document.getElementById("discovery-type");
   ui.discoveryDescription = document.getElementById("discovery-description");
+  ui.encounterGreeting = document.getElementById("encounter-greeting");
+  ui.mapReaction = document.getElementById("map-reaction");
   ui.collectButton = document.getElementById("collect-btn");
   ui.bookDetailModal = document.getElementById("book-detail-modal");
   ui.bookDetailName = document.getElementById("book-detail-name");
@@ -197,6 +202,7 @@ function bindUi() {
     void refreshSammeltjesData({ silent: true });
   });
   document.addEventListener("visibilitychange", () => {
+    clearMapReaction();
     if (!document.hidden) {
       void refreshSammeltjesData({ silent: true });
       simulationTick(true);
@@ -207,6 +213,7 @@ function bindUi() {
       state.requests = loadFriendRequests();
       renderRequests();
       renderEncounterRequest(state.entities.find((item) => item.id === state.currentDiscoveryId));
+      renderEncounterGreeting(state.entities.find((item) => item.id === state.currentDiscoveryId));
       return;
     }
     if (event.key !== DATA_VERSION_KEY || !event.newValue || event.newValue === state.lastDataVersion) {
@@ -712,6 +719,7 @@ function simulationTick(forceUi = false) {
 
   }
 
+  updateMapReaction();
   const now = performance.now();
   if (forceUi || now - state.lastUiRenderAt >= CONFIG.UI_UPDATE_MS) {
     renderRequests();
@@ -764,7 +772,7 @@ function syncEntityMarker(entity) {
 
 function companionIcon(entity, revealed) {
   return L.divIcon({ className: "companion-marker", iconSize: [52, 62], iconAnchor: [26, 52],
-    html: revealed ? `<span class="companion-portrait companion-portrait--${entity.rarity}"><img src="${escapeHtml(entity.thumbnail || entity.image)}" alt="${escapeHtml(entity.name)}" />${entity.collected ? '<span class="friend-badge" aria-label="Bekend vriendje">&#10003;</span>' : ""}</span>`
+    html: revealed ? `<span class="companion-portrait companion-portrait--${entity.rarity}"><img src="${escapeHtml(entity.thumbnail || entity.image)}" alt="${escapeHtml(entity.name)}" /><svg class="companion-wave" viewBox="0 0 32 36" aria-hidden="true"><path d="M9 27 4 16q-1-4 2-4l5 6-2-12q0-4 3-3l3 12V4q1-4 4-1l1 12 1-9q2-3 4 0v14q4-6 6-2l-6 12-3 3H13Z" fill="#f4d9a3" stroke="#6a6947" stroke-width="1.5" stroke-linejoin="round"/></svg>${entity.collected ? '<span class="friend-badge" aria-label="Bekend vriendje">&#10003;</span>' : ""}</span>`
       : '<span class="mystery-signal" aria-label="Onbekend signaal">?</span>' });
 }
 
@@ -833,10 +841,13 @@ function showNextDiscovery() {
   }
 
   state.currentDiscoveryId = nextId;
+  clearMapReaction();
+  state.requests = loadFriendRequests();
   ui.discoveryName.textContent = entity.name;
   ui.discoveryImage.src = entity.image;
   ui.discoveryImage.alt = entity.name;
   ui.discoveryDescription.textContent = entity.description;
+  renderEncounterGreeting(entity);
   document.getElementById("discovery-eyebrow").textContent = entity.collected ? "Een bekend vriendje" : "Een nieuwe ontmoeting";
   ui.collectButton.textContent = entity.collected ? "Fijn je weer te zien" : "Toevoegen aan Sammeltjesboek";
   ui.discoveryRarity.textContent = rarityLabel(entity.rarity);
@@ -847,6 +858,65 @@ function showNextDiscovery() {
   ui.discoveryModal.classList.add("flex");
   state.lastFocusedElement = document.activeElement;
   ui.discoveryModal.focus();
+}
+
+function renderEncounterGreeting(entity) {
+  const known = entity && state.discovered.has(entity.id);
+  ui.encounterGreeting.hidden = !known;
+  ui.discoveryDescription.hidden = Boolean(known);
+  if (!known) return;
+  const greeting = Personality.greeting(entity, {known:true, progress:state.requests, entities:state.entities});
+  ui.encounterGreeting.dataset.kind = greeting.kind;
+  document.getElementById("encounter-greeting-label").textContent = greeting.label;
+  document.getElementById("encounter-greeting-text").textContent = greeting.text;
+}
+
+function clearMapReaction(resetCandidate = true) {
+  if (resetCandidate) state.reactions = Personality.stepReactions(state.reactions, [], performance.now());
+  const marker = state.entities.find(item => item.id === state.reactionEntityId)?.marker?.getElement();
+  if (marker) delete marker.dataset.reactionMotion;
+  state.reactionEntityId = null;
+  ui.mapReaction.hidden = true;
+  delete ui.mapReaction.dataset.entityId;
+}
+
+function updateMapReaction() {
+  if (document.hidden || state.currentView !== "map" || state.currentDiscoveryId || state.currentBookDetailId || !hasUsablePosition()) {
+    clearMapReaction();
+    return;
+  }
+  const bounds = state.map.getContainer().getBoundingClientRect();
+  const obstacles = [ui.hudPanel, document.getElementById("nearby-panel"), ui.recenterButton, ui.toast,
+    document.querySelector("nav"), document.querySelector(".leaflet-control-zoom")]
+    .filter(node => node && !node.hidden && node.getClientRects().length)
+    .map(node => node.getBoundingClientRect());
+  const candidates = state.entities.filter(item => item.enabled && item.availableNow && item.radarVisible && item.marker)
+    .map(item => {
+      const point = state.map.latLngToContainerPoint([item.currentLat,item.currentLng]);
+      const width = Math.min(208, bounds.width-24);
+      const left = Math.min(bounds.width-width-12, Math.max(12, point.x-width/2));
+      const top = point.y-132;
+      const rectangle = {left:bounds.left+left, right:bounds.left+left+width, top:bounds.top+top, bottom:bounds.top+top+84};
+      const unobstructed = point.x >= 26 && point.x <= bounds.width-26 && top >= 12 && point.y <= bounds.height-30 &&
+        !obstacles.some(box => rectangle.left < box.right+6 && rectangle.right > box.left-6 && rectangle.top < box.bottom+6 && rectangle.bottom > box.top-6);
+      return {...item, reactionPosition:{left,top,width,tail:point.x-left}, unobstructed};
+    }).filter(item => item.unobstructed);
+  state.reactions = Personality.stepReactions(state.reactions, candidates, performance.now());
+  const active = candidates.find(item => item.id === state.reactions.active?.id);
+  if (!active) { clearMapReaction(false); return; }
+  if (state.reactionEntityId !== active.id || ui.mapReaction.hidden) {
+    const reaction = Personality.reaction(active, state.discovered.has(active.id));
+    state.reactionEntityId = active.id;
+    active.marker.closeTooltip();
+    active.marker.getElement().dataset.reactionMotion = reaction.motion;
+    document.getElementById("map-reaction-name").textContent = active.name;
+    document.getElementById("map-reaction-text").textContent = reaction.text;
+    ui.mapReaction.dataset.entityId = active.id;
+    ui.mapReaction.hidden = false;
+  }
+  const position = active.reactionPosition;
+  Object.assign(ui.mapReaction.style, {left:position.left+"px", top:position.top+"px", width:position.width+"px"});
+  ui.mapReaction.style.setProperty("--reaction-tail", position.tail+"px");
 }
 
 function dismissDiscovery(applyCooldown) {
@@ -1229,6 +1299,7 @@ function restoreLastFocus() {
 }
 
 function switchView(view) {
+  clearMapReaction();
   window.clearTimeout(state.toastTimer);
   ui.toast.classList.remove("is-visible");
   ui.toast.classList.add("hidden");

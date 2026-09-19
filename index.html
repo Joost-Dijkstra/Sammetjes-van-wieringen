@@ -23,7 +23,7 @@
     />
     <link rel="stylesheet" href="tailwind.generated.css?v=20260711" />
     <link rel="stylesheet" href="vendor/leaflet/leaflet.css?v=1.9.4" />
-    <link rel="stylesheet" href="style.css?v=20260919" />
+    <link rel="stylesheet" href="style.css?v=20260919b" />
   </head>
   <body class="fantasy-ui antialiased">
     <svg class="illustration-definitions" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
@@ -42,6 +42,9 @@
     </svg>
     <div id="app" class="relative min-h-screen overflow-hidden" data-testid="game-app">
       <div id="map" class="absolute inset-0" data-testid="game-map"></div>
+      <div id="map-reaction" class="map-reaction" data-testid="map-reaction" aria-hidden="true" hidden>
+        <strong id="map-reaction-name"></strong><span id="map-reaction-text"></span>
+      </div>
       <div class="pointer-events-none absolute inset-0 aurora-overlay"></div>
 
       <header class="pointer-events-none absolute inset-x-0 top-0 z-[900] p-4">
@@ -213,6 +216,10 @@
           </div>
 
           <p id="discovery-description" class="mt-4 text-sm leading-6 text-slate-600"></p>
+          <blockquote id="encounter-greeting" class="encounter-greeting" data-testid="encounter-greeting" hidden>
+            <p id="encounter-greeting-label" class="book-eyebrow"></p>
+            <p id="encounter-greeting-text"></p>
+          </blockquote>
 
           <div id="encounter-request" class="encounter-request" hidden>
             <p class="book-eyebrow">Een klein verzoekje</p>
@@ -284,7 +291,8 @@
     <script src="terrain.js?v=20260915"></script>
     <script src="request-stories.js?v=20260919"></script>
     <script src="friend-requests.js?v=20260919"></script>
-    <script src="app.js?v=20260919"></script>
+    <script src="companion-personality.js?v=20260919"></script>
+    <script src="app.js?v=20260919b"></script>
     <script>
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {

@@ -32,6 +32,16 @@ De verzameling blijft op dit toestel in de browser bewaard, zonder account. Oude
 
 Het Sammeltjesboek toont je gevonden vriendjes eerst. Met **Gevonden** bekijk je alleen je eigen verzameling; **Alle vriendjes** toont ook de nog onbekende bewoners. Tik op een gevonden kaartje voor de volledige afbeelding en het verhaal. De kleuren en kleine tekeningen op de kaartjes verwijzen naar hun leefomgeving.
 
+## Bekende Gezichtjes
+
+Bekende Sammeltjes begroeten je persoonlijk wanneer je ze van dichtbij opent. Hun reactie past bij nieuwsgierig, bang of verlegen gedrag. De gewone beschrijving blijft in het Sammeltjesboek staan. De herkenning gebruikt je bestaande verzameling, zonder nieuwe accounts, bezoektellers of opgeslagen wandelroutes.
+
+Een afgerond verzoekje wordt door zowel de gever als de ontvanger onthouden. Op de bezorgdag bedanken ze je voor het voorwerp; vanaf een volgende Nederlandse kalenderdag kan er een klein vervolgverhaaltje verschijnen. De meest recente eigen bezorging krijgt voorrang. Oude groeten blijven gewone groeten en onafgemaakte verzoekjes leveren geen verzonnen herinnering op. Dit geeft geen extra stempels en verplicht je niet om terug te komen.
+
+Op de kaart kan binnen 60 meter een kort ballonnetje verschijnen met een zwaai, knikje of voorzichtige blik. Eerst moet het vriendje 1,5 seconde in beeld blijven. Er is hooguit een ballonnetje tegelijk, 5,5 seconden lang, daarna minstens 25 seconden rust; hetzelfde vriendje reageert hooguit eens per twee minuten in een sessie. Bedieningselementen worden vermeden. Bij geen bruikbare GPS, buiten beeld/bereik, slapen, een ontmoeting of een ander scherm verdwijnen reacties. De kaart verplaatst hiervoor niet. De systeemvoorkeur voor minder beweging schakelt de animaties uit.
+
+Begroetingen, vijftien vervolgverhalen en reactietiming staan in `companion-personality.js`. Ze werken lokaal en offline en veranderen geen locaties, gedragssnelheden of voortgang.
+
 ## Kleine Verzoekjes
 
 Het aparte radarscherm en de afstandscirkels op de speelkaart zijn vervangen door **Verzoekjes**. De bestaande ontmoetingsafstanden en gedragsregels blijven hetzelfde. De technische proefwandeling in de admin houdt zijn bereikcirkel.
