@@ -901,8 +901,15 @@ function collectCurrentDiscovery() {
   const requestFinished = completed !== state.requests;
   if (requestFinished && !saveFriendRequests(completed)) return;
   renderRequests();
-  showToast(requestFinished ? "Groet bezorgd! Je nieuwe stempel staat bij Verzoekjes." : alreadyKnown ? `${entity.name} is blij je weer te zien.` : `${entity.name} heeft een plekje in je Sammeltjesboek.`);
   dismissDiscovery(false);
+  if (requestFinished) {
+    switchView("requests");
+    const memory = document.querySelector("[data-latest-memory]");
+    memory?.scrollIntoView({block:"nearest"});
+    memory?.querySelector("summary").focus({preventScroll:true});
+  } else {
+    showToast(alreadyKnown ? `${entity.name} is blij je weer te zien.` : `${entity.name} heeft een plekje in je Sammeltjesboek.`);
+  }
   renderEncounterPrompt();
 }
 
@@ -930,12 +937,18 @@ function renderEncounterRequest(entity) {
   state.requestOffer = null;
   note.hidden = true;
   button.hidden = true;
+  note.querySelector(".request-parcel")?.remove();
+  note.querySelector(".request-distance")?.remove();
   if (!entity || !state.discovered.has(entity.id)) return;
   const active = state.requests.active;
   if (active?.targetId === entity.id) {
     const giver = state.entities.find((item) => item.id === active.giverId);
     note.hidden = false;
-    document.getElementById("encounter-request-text").textContent = `Je hebt een groet van ${giver?.name || "een eilandvriendje"} bij je. Begroet ${entity.name} om het verzoekje af te ronden.`;
+    const story = FriendRequests.describe(active, giver, entity);
+    note.insertAdjacentHTML("afterbegin", requestParcel(story));
+    document.getElementById("encounter-request-text").textContent = story.personal
+      ? `Je hebt ${story.item.toLowerCase()} van ${giver?.name || "een eilandvriendje"} bij je. Begroet ${entity.name} om het te geven.`
+      : `Je hebt een groet van ${giver?.name || "een eilandvriendje"} bij je. Begroet ${entity.name} om het verzoekje af te ronden.`;
     return;
   }
   const offer = FriendRequests.offer(entity, state.entities, state.discovered, state.requests);
@@ -944,7 +957,10 @@ function renderEncounterRequest(entity) {
   const target = state.entities.find((item) => item.id === offer.targetId);
   note.hidden = false;
   button.hidden = false;
-  document.getElementById("encounter-request-text").textContent = FriendRequests.tale(entity.biome).message.replace("{target}", target.name);
+  const story = FriendRequests.describe(offer, entity, target);
+  note.insertAdjacentHTML("afterbegin", requestParcel(story));
+  document.getElementById("encounter-request-text").textContent = story.message;
+  note.insertAdjacentHTML("beforeend", requestDistance(entity, target));
 }
 
 function acceptFriendRequest() {
@@ -952,7 +968,7 @@ function acceptFriendRequest() {
   state.requests = loadFriendRequests();
   const giver = state.entities.find((item) => item.id === state.currentDiscoveryId);
   const fresh = FriendRequests.offer(giver, state.entities, state.discovered, state.requests);
-  if (!canMeet(giver) || !offered || fresh?.targetId !== offered.targetId || fresh?.giverId !== offered.giverId) {
+  if (!canMeet(giver) || !offered || fresh?.targetId !== offered.targetId || fresh?.giverId !== offered.giverId || fresh?.templateId !== offered.templateId) {
     renderEncounterRequest(giver);
     showToast("Dit verzoekje is nu niet beschikbaar. Kijk rustig opnieuw.");
     return;
@@ -964,6 +980,17 @@ function acceptFriendRequest() {
 
 function requestPortrait(entity) {
   return entity ? `<img src="${escapeHtml(entity.thumbnail || entity.image)}" alt="${escapeHtml(entity.name)}" width="72" height="72" />` : "";
+}
+
+function requestParcel(story) {
+  return `<div class="request-parcel" data-testid="request-parcel"><svg aria-hidden="true" viewBox="0 0 64 64"><use href="assets/request-items.svg#${escapeHtml(story.icon)}"/></svg><span><small>Voor onderweg</small><strong>${escapeHtml(story.item)}</strong></span></div>`;
+}
+
+function requestDistance(giver, target) {
+  if (!giver || !target) return "";
+  const meters = Rules.distance(giver, target);
+  const label = meters >= 1000 ? `${(meters / 1000).toLocaleString("nl-NL", {maximumFractionDigits:1})} km` : `${Math.round(meters / 10) * 10} m`;
+  return `<p class="request-footnote request-distance">${meters > 1500 ? "Een langer ommetje. " : ""}Woonplekken: circa ${label} hemelsbreed. De wandelroute kan langer zijn.</p>`;
 }
 
 function renderRequests() {
@@ -978,18 +1005,22 @@ function renderRequests() {
   if (active) {
     const giver = state.entities.find((item) => item.id === active.giverId);
     const target = state.entities.find((item) => item.id === active.targetId);
+    const story = FriendRequests.describe(active, giver, target);
     const reachable = FriendRequests.enabled(giver) && FriendRequests.enabled(target) && state.discovered.has(active.targetId);
     const awake = reachable && Rules.available(target);
     const message = !reachable ? "Een van deze vriendjes is niet meer beschikbaar. Je kunt het verzoekje zonder nadeel teruggeven."
       : !awake ? `${target.name} rust nu. Kom later terug; je verzoekje blijft bewaard.`
-      : `Ga naar ${target.name} en kies van dichtbij Begroeten. Met je groet maak je het verzoekje af.`;
+      : `Ga naar ${target.name} en kies van dichtbij Begroeten. Zo ${story.personal ? "geef je het voorwerp" : "breng je de groet over"}.`;
     html += `<article class="request-letter" data-testid="active-request">
-      <p class="book-eyebrow">Jouw kleine ommetje</p><h3>${escapeHtml(FriendRequests.tale(giver?.biome).title)}</h3>
+      <p class="book-eyebrow">Jouw kleine ommetje</p><h3>${escapeHtml(story.title)}</h3>
+      ${requestParcel(story)}
       <div class="request-friends">${requestPortrait(giver)}<span aria-hidden="true">&#8594;</span>${requestPortrait(target)}</div>
       <p class="request-from">Van ${escapeHtml(giver?.name || "een eilandvriendje")} voor ${escapeHtml(target?.name || "een eilandvriendje")}</p>
+      <blockquote class="request-quote">${escapeHtml(story.message)}</blockquote>
+      ${requestDistance(giver, target)}
       <p class="request-instruction" role="status">${escapeHtml(message)}</p>
       <div class="request-actions">${reachable ? `<button class="soft-button soft-button--primary" data-request-locate="${escapeHtml(target.id)}" type="button">Bekijk de woonplek</button>` : ""}<button class="request-return" data-request-cancel type="button">Verzoekje teruggeven</button></div>
-      <p class="request-footnote">Geen tijdslimiet. Wandel op openbare paden.</p></article>`;
+      <p class="request-footnote">Alles zit in je denkbeeldige tas. Je hoeft niets echt mee te nemen of te plukken. Geen tijdslimiet; wandel op openbare paden.</p></article>`;
   } else {
     const offers = state.entities.filter((item) => Rules.available(item) && FriendRequests.offer(item, state.entities, state.discovered, state.requests));
     offers.sort((a,b) => hasUsablePosition() ? distanceMeters(state.playerPosition,a)-distanceMeters(state.playerPosition,b) : a.id.localeCompare(b.id));
@@ -1006,9 +1037,9 @@ function renderRequests() {
     html += [...completed].reverse().map((request,index) => {
       const giver = state.entities.find((item) => item.id === request.giverId);
       const target = state.entities.find((item) => item.id === request.targetId);
-      const tale = FriendRequests.tale(giver?.biome);
+      const tale = FriendRequests.describe(request, giver, target);
       const date = new Intl.DateTimeFormat("nl-NL", {dateStyle:"long",timeZone:"Europe/Amsterdam"}).format(new Date(request.completedAt));
-      return `<details class="request-memory" ${index === 0 ? "open" : ""}><summary><span class="request-stamp" aria-hidden="true">&#10003;</span><span>${escapeHtml(tale.title)}<small>${escapeHtml(date)}</small></span></summary><p>${escapeHtml(tale.story)}</p><p class="request-footnote">${escapeHtml(giver?.name || "Een eilandvriendje")} &amp; ${escapeHtml(target?.name || "een eilandvriendje")}</p></details>`;
+      return `<details class="request-memory" ${index === 0 ? 'open data-latest-memory' : ""}><summary><span class="request-stamp" aria-hidden="true">&#10003;</span><span>${escapeHtml(tale.title)}<small>${escapeHtml(date)}</small></span></summary><blockquote class="request-thanks" data-testid="request-thanks"><strong>${escapeHtml(target?.name || "Je vriendje")} zegt:</strong><p>${escapeHtml(tale.thanks)}</p></blockquote><p>${escapeHtml(tale.story)}</p><p class="request-footnote">${escapeHtml(giver?.name || "Een eilandvriendje")} &amp; ${escapeHtml(target?.name || "een eilandvriendje")}</p></details>`;
     }).join("");
   }
   // Keep focus, expanded memories and scroll position while the simulation ticks.

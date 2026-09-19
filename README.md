@@ -36,11 +36,15 @@ Het Sammeltjesboek toont je gevonden vriendjes eerst. Met **Gevonden** bekijk je
 
 Het aparte radarscherm en de afstandscirkels op de speelkaart zijn vervangen door **Verzoekjes**. De bestaande ontmoetingsafstanden en gedragsregels blijven hetzelfde. De technische proefwandeling in de admin houdt zijn bereikcirkel.
 
-Begroet een bekend vriendje van dichtbij. Als er een ander bekend, wakker vriendje binnen 1,5 km van zijn woonplek woont, kan het vragen een groet over te brengen. Kies **Ik help je** om dat verzoekje aan te nemen. Er is maximaal een actief verzoekje, zonder tijdslimiet. **Bekijk de woonplek** verplaatst alleen de kaart, nooit je speler. Dit is geen routeplanner; blijf op openbare paden.
+Begroet een bekend vriendje van dichtbij. Vijftien bewoners hebben een persoonlijk verzoekje: bijvoorbeeld geleende breinaalden terugbrengen naar Oma, of een armbandje bezorgen namens Havenpluimpje. De andere bewoners houden hun vertrouwde groeten. Zowel gever als ontvanger moeten bekend, actief en wakker zijn bij het aanbieden. Kies **Ik help je** om het aan te nemen. Er is maximaal een actief verzoekje, zonder tijdslimiet. Alles is denkbeeldig: neem niets mee uit de natuur.
 
-Ga naar het andere vriendje, kies **Begroeten** en bevestig de ontmoeting. Alleen binnen 20 meter en met bruikbare GPS (of lokale demo) telt de groet. Je verdient een verhaaltje en een vriendschapsstempel bij Verzoekjes. Per vragend Sammeltje kun je eenmaal een stempel verdienen: geen dagelijkse druk of eindeloos dezelfde opdracht.
+Geleende spullen en vaste cadeaus hebben een vaste ontvanger. Wisselcadeautjes kiezen de dichtstbijzijnde geschikte ontvanger uit een kleine lijst, normaal binnen 1,5 km. Akkervonk heeft 2 km en de afgelegen Opa 3 km bereik. Vaste verhalen kunnen verder weg gaan: Molenmaatjes windboek gaat bijvoorbeeld circa 9 km hemelsbreed naar Opa. De afstand staat vooraf bij het verzoekje; wandelen kan langer zijn. **Bekijk de woonplek** verplaatst alleen de kaart, nooit je speler. Dit is geen routeplanner; blijf op openbare paden.
 
-Slapende vriendjes wachten tot een later bezoek. Verwijderde of uitgeschakelde vriendjes worden duidelijk gemeld. Je kunt een verzoekje altijd zonder straf teruggeven. Verzoekjes en stempels blijven lokaal op dit toestel bewaard, apart van je bestaande verzameling. De verhalen per leefgebied staan overzichtelijk in `friend-requests.js`. De videoproef is nog niet ingebouwd.
+Ga naar het andere vriendje, kies **Begroeten** en bevestig de ontmoeting. Alleen binnen 20 meter en met bruikbare GPS (of lokale demo) telt de bezorging. Je krijgt meteen een persoonlijk bedankje, een verhaaltje en een vriendschapsstempel bij Verzoekjes. Het bedankje blijft bij die stempel leesbaar. Per vragend Sammeltje kun je eenmaal een stempel verdienen, ook als je eerder al een gewone groet hebt bezorgd: geen dagelijkse druk of eindeloos dezelfde opdracht.
+
+Slapende vriendjes wachten tot een later bezoek. Verwijderde of uitgeschakelde vriendjes worden duidelijk gemeld. Je kunt een verzoekje altijd zonder straf teruggeven. Verzoekjes en stempels blijven lokaal op dit toestel bewaard, apart van je bestaande verzameling. Oude actieve groeten blijven groeten; oude stempels worden niet omgeschreven of gewist.
+
+De persoonlijke teksten, vaste ontvangers en ontvangerlijsten staan in `request-stories.js`; de selectieregels, migratie en oude leefgebiedverhalen in `friend-requests.js`. De getekende voorwerpen staan in `assets/request-items.svg`. Deze bestanden werken ook offline na een eerste online bezoek. Er zijn geen nieuwe afhankelijkheden toegevoegd. De videoproef blijft geparkeerd.
 
 ## Gedrag Aanpassen
 

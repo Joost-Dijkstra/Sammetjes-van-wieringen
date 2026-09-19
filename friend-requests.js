@@ -1,10 +1,18 @@
 (function (root, factory) {
-  const api = factory(typeof module === "object" && module.exports ? require("./game-rules.js") : root.SammeltjesRules);
+  const commonJS = typeof module === "object" && module.exports;
+  const api = factory(commonJS ? require("./game-rules.js") : root.SammeltjesRules, commonJS ? require("./request-stories.js") : root.SammeltjesStories);
   if (typeof module === "object" && module.exports) module.exports = api;
   else root.SammeltjesRequests = api;
-})(typeof globalThis !== "undefined" ? globalThis : this, function (Rules) {
+})(typeof globalThis !== "undefined" ? globalThis : this, function (Rules, CATALOG) {
   "use strict";
   const STORAGE_KEY = "sammeltjes-friend-requests-v1";
+  // Old records intentionally remain greetings; new records keep their chosen story.
+  function identity(item) {
+    const record = {giverId:item.giverId, targetId:item.targetId};
+    const template = CATALOG.find((q) => q.id === item.templateId && q.giverId === item.giverId && q.targets.includes(item.targetId));
+    if (template) record.templateId = template.id;
+    return record;
+  }
   const enabled = (item) => Boolean(item && (item.enabled ?? item.active));
   const validId = (id) => typeof id === "string" && /^[a-z0-9-]{1,100}$/i.test(id);
   const validRecord = (item) => item && validId(item.giverId) && validId(item.targetId) && item.giverId !== item.targetId;
@@ -13,18 +21,19 @@
     const completed = (Array.isArray(value?.completed) ? value.completed : []).filter((item) => {
       if (!validRecord(item) || !Number.isFinite(Date.parse(item.completedAt)) || seen.has(item.giverId)) return false;
       seen.add(item.giverId); return true;
-    }).map(({giverId, targetId, completedAt}) => ({giverId, targetId, completedAt}));
+    }).map((item) => ({...identity(item), completedAt:item.completedAt}));
     const item = value?.active;
-    const active = validRecord(item) && !seen.has(item.giverId) ? {giverId:item.giverId, targetId:item.targetId} : null;
+    const active = validRecord(item) && !seen.has(item.giverId) ? identity(item) : null;
     return {active, completed};
   }
   function offer(giver, entities, discovered, progress, now = new Date()) {
-    if (!enabled(giver) || !discovered.has(giver.id) || progress.active || progress.completed.some((q) => q.giverId === giver.id)) return null;
+    if (!enabled(giver) || !Rules.available(giver, now) || !discovered.has(giver.id) || progress.active || progress.completed.some((q) => q.giverId === giver.id)) return null;
+    const template = CATALOG.find((q) => q.giverId === giver.id);
     const candidates = entities.filter((item) => item.id !== giver.id && enabled(item) && discovered.has(item.id) && Rules.available(item, now))
       .map((item) => ({item, distance:Rules.distance(giver, item)}))
-      .filter((entry) => entry.distance <= 1500)
+      .filter(({item,distance}) => (!template || template.targets.includes(item.id)) && (template?.fixed || distance <= (template?.maxDistance || 1500)))
       .sort((a,b) => a.distance - b.distance || a.item.id.localeCompare(b.item.id));
-    return candidates.length ? {giverId:giver.id, targetId:candidates[0].item.id} : null;
+    return candidates.length ? {giverId:giver.id, targetId:candidates[0].item.id, ...(template ? {templateId:template.id} : {})} : null;
   }
   function complete(progress, greetedId, canMeet, now = new Date()) {
     if (!progress.active || progress.active.targetId !== greetedId || !canMeet) return progress;
@@ -38,5 +47,10 @@
     if (biome === "molen") return {title:"Een molen vol verhalen", message:"De wieken draaien maar door! Wil je {target} vertellen dat ik aan hem of haar denk?", story:"De molen hield de wind gezelschap, jij hield de vriendjes verbonden. Zo kreeg een gewone wandeling een eigen klein verhaal."};
     return {title:"Een ommetje voor een vriend", message:"Tussen het eilandgroen dacht ik aan {target}. Wil je namens mij even hallo zeggen?", story:"Een pad door het groen, een vriendelijk gezicht en een groet om door te geven. Meer was er niet nodig voor een mooie eilanddag."};
   }
-  return {STORAGE_KEY, normalize, offer, complete, tale, enabled};
+  function describe(request, giver, target) {
+    const template = CATALOG.find((q) => q.id === identity(request).templateId);
+    const content = template || {...tale(giver?.biome), item:"Een vriendelijke groet", icon:"letter", thanks:"Wat lief dat je de groetjes komt doen. Daar wordt mijn dag een stukje mooier van!"};
+    return {...content, personal:Boolean(template), message:content.message.replaceAll("{target}", target?.name || "een eilandvriendje")};
+  }
+  return {STORAGE_KEY, normalize, offer, complete, tale, describe, enabled, CATALOG};
 });

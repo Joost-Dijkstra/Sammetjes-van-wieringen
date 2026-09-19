@@ -660,6 +660,17 @@ body[data-game-view="book"] .leaflet-control-zoom { visibility: hidden; }
   .nearby-panel img { width: 37px; height: 46px; }
 }
 .requests-journal { max-width: 580px; }
+.request-parcel { display: flex; align-items: center; gap: 12px; margin: 14px 0; padding: 10px 14px; border-radius: 15px; background: #fff8e6; border: 1px solid #dab97780; }
+.request-parcel svg { width: 54px; height: 54px; flex-shrink: 0; transform: rotate(-5deg); }
+.request-parcel small { display: block; font-size: .6rem; text-transform: uppercase; letter-spacing: .12em; color: #806745; }
+.request-parcel strong { display: block; margin-top: 4px; font: bold 1.05rem Georgia, serif; }
+.request-quote { margin: 16px 0; padding-left: 13px; border-left: 3px solid #d2aa63; font: italic .9rem/1.65 Georgia, serif; }
+.request-thanks { margin-top: 16px; padding: 14px; border-radius: 12px; background: #fff9e9; font-size: .86rem; line-height: 1.6; }
+.request-thanks strong { color: var(--sea); font-size: .75rem; }
+.request-thanks p { margin-top: 5px; font-style: italic; }
+.encounter-request .request-parcel { margin: 0 0 10px; padding: 6px 10px; }
+.encounter-request .request-parcel svg { width: 36px; height: 36px; }
+.encounter-request .request-parcel small { display: none; }
 .request-cover { flex-shrink: 0; display: flex; align-items: center; gap: 18px; padding: 20px; border: 1px solid #d0aa70; border-radius: 16px 16px 28px 16px; background: radial-gradient(ellipse at 100% 100%, #efc9a1 0 30%, transparent 31%), #f8e8c6; }
 .request-cover svg { width: 72px; height: 72px; flex-shrink: 0; transform: rotate(-8deg); }
 .request-cover p { font: 1.55rem/1.15 "Palatino Linotype", Georgia, serif; color: #6c452a; }

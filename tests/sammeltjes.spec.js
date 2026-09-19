@@ -40,17 +40,17 @@ async function openDetails(page, title) {
 }
 
 async function requestGame(page, context) {
-  const items = require('../data/sammeltjes.json').map(item => ['molenmaatje','wieringer-wolkje'].includes(item.id)
-    ? {...item,type:'fixed',speedKmh:0,active:true,availabilityMode:'all-day'} : {...item});
+  const items = require('../data/sammeltjes.json').map(item => ['havenpluimpje','wieringer-wolkje'].includes(item.id)
+    ? {...item,...(item.id==='havenpluimpje'?home:{}),type:'fixed',speedKmh:0,active:true,availabilityMode:'all-day'} : {...item,active:false});
   await context.route('**/data/sammeltjes.json*', route => route.fulfill({json:items}));
   await context.addInitScript(() => {
-    if (!localStorage.getItem('sammeltjes-wieringen-discovered')) localStorage.setItem('sammeltjes-wieringen-discovered',JSON.stringify(['molenmaatje','wieringer-wolkje']));
+    if (!localStorage.getItem('sammeltjes-wieringen-discovered')) localStorage.setItem('sammeltjes-wieringen-discovered',JSON.stringify(['havenpluimpje','wieringer-wolkje']));
   });
   await game(page,true);
   return items;
 }
 async function acceptRequest(page) {
-  await page.getByTestId('entity-marker-molenmaatje').click();
+  await page.getByTestId('entity-marker-havenpluimpje').click();
   await expect(page.locator('#encounter-request-text')).toContainText('Wieringer Wolkje');
   await page.getByTestId('accept-request-btn').click();
   await expect(page.getByTestId('active-request')).toBeVisible();
@@ -93,10 +93,11 @@ test('Een verzoekje bewaren, overbrengen en precies een stempel verdienen', asyn
   // Looking at a destination does not teleport the player or finish the request.
   expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('sammeltjes-friend-requests-v1')).completed.length)).toBe(0);
   await visitWolkje(page);
-  await expect(page.locator('#encounter-request-text')).toContainText('groet van Molenmaatje');
+  await expect(page.locator('#encounter-request-text')).toContainText('geluksarmbandje van Havenpluimpje');
   await expect(page.getByTestId('accept-request-btn')).toBeHidden();
   await page.getByRole('button',{name:'Fijn je weer te zien',exact:true}).click();
-  await page.locator('[data-view="requests"]').click();
+  await expect(page.getByTestId('request-thanks')).toContainText('scheve knoopje');
+  await expect(page.getByTestId('request-thanks')).toBeInViewport();
   await expect(page.locator('#request-stamp-count')).toHaveText('1 vriendschapsstempel');
   await expect(page.locator('.request-memory')).toHaveCount(1);
   await expect(page.getByTestId('active-request')).toHaveCount(0);
@@ -119,6 +120,85 @@ test('Weglopen voor de begroeting rondt geen verzoekje af', async ({page,context
   expect(progress.active.targetId).toBe('wieringer-wolkje'); expect(progress.completed).toHaveLength(0);
 });
 
+test('Geleende breinaalden gaan terug naar Oma, ook na herladen en naast een ander vriendje', async ({page,context}) => {
+  const items=require('../data/sammeltjes.json').map(item=>({...item,type:'fixed',speedKmh:0,availabilityMode:'all-day'}));
+  await context.route('**/data/sammeltjes.json*',route=>route.fulfill({json:items}));
+  await context.addInitScript(()=>localStorage.setItem('sammeltjes-wieringen-discovered',JSON.stringify(['schapenherdertje','oma-wierwortel','boer-bietje'])));
+  await game(page);
+  const visit=async(id)=>{
+    await page.locator('[data-view="map"]').click();
+    await page.evaluate(id=>{
+      const api=window.__SAMMELTJES_TEST_API__, entity=api.getEntitySnapshot(id);
+      api.setDemoMode(true); api.setPlayerPosition(entity.currentLat,entity.currentLng); api.setMapCenter(entity.currentLat,entity.currentLng,17);
+    },id);
+    await page.getByTestId('entity-marker-'+id).click();
+  };
+  await visit('schapenherdertje');
+  await expect(page.locator('#encounter-request-text')).toContainText('breinaalden van Oma Wierwortel');
+  await expect(page.locator('#encounter-request .request-distance')).toContainText('Een langer ommetje');
+  await page.getByTestId('accept-request-btn').click();
+  await page.reload(); await page.waitForFunction(()=>!!window.__SAMMELTJES_TEST_API__);
+  await page.locator('[data-view="requests"]').click();
+  await expect(page.getByTestId('active-request')).toContainText('Breinaalden');
+  await visit('boer-bietje');
+  await page.getByRole('button',{name:'Fijn je weer te zien',exact:true}).click();
+  expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('sammeltjes-friend-requests-v1')).active.targetId)).toBe('oma-wierwortel');
+  await visit('oma-wierwortel');
+  await page.getByRole('button',{name:'Fijn je weer te zien',exact:true}).click();
+  await expect(page.getByTestId('request-thanks')).toContainText('sokken voor Opa');
+  await expect(page.locator('#request-stamp-count')).toHaveText('1 vriendschapsstempel');
+});
+
+test('Een oude groet blijft af te maken zonder verdiende stempels kwijt te raken', async ({page,context})=>{
+  await requestGame(page,context);
+  await page.evaluate(()=>{
+    localStorage.setItem('sammeltjes-friend-requests-v1',JSON.stringify({
+      active:{giverId:'havenpluimpje',targetId:'wieringer-wolkje'},
+      completed:[{giverId:'schapenherdertje',targetId:'oma-wierwortel',completedAt:'2026-09-01T12:00:00Z'}]
+    }));
+  });
+  await page.reload(); await page.waitForFunction(()=>!!window.__SAMMELTJES_TEST_API__);
+  await page.locator('[data-view="requests"]').click();
+  await expect(page.getByTestId('active-request')).toContainText('Een vriendelijke groet');
+  await expect(page.getByTestId('active-request')).not.toContainText('Geluksarmbandje');
+  await expect(page.locator('#request-stamp-count')).toHaveText('1 vriendschapsstempel');
+  await visitWolkje(page);
+  await page.getByRole('button',{name:'Fijn je weer te zien',exact:true}).click();
+  await expect(page.locator('#request-stamp-count')).toHaveText('2 vriendschapsstempels');
+  expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('sammeltjes-friend-requests-v1')).completed[0])).toEqual({giverId:'schapenherdertje',targetId:'oma-wierwortel',completedAt:'2026-09-01T12:00:00Z'});
+});
+
+test('Persoonlijke brieven en getekende voorwerpen passen op telefoon en desktop',async({page,context})=>{
+  const errors=errorsFor(page);
+  await page.emulateMedia({reducedMotion:'reduce'});
+  await requestGame(page,context);
+  await page.getByTestId('entity-marker-havenpluimpje').click();
+  for(const size of [{width:320,height:568},{width:390,height:844},{width:844,height:390}]) {
+    await page.setViewportSize(size);
+    await page.getByTestId('accept-request-btn').scrollIntoViewIfNeeded();
+    await expect(page.getByTestId('accept-request-btn')).toBeInViewport();
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth)).toBe(false);
+  }
+  await page.getByTestId('accept-request-btn').click();
+  for(const size of [{width:320,height:568},{width:390,height:844},{width:844,height:390},{width:1280,height:900}]) {
+    await page.setViewportSize(size);
+    await expect(page.locator('#close-requests-btn')).toBeInViewport();
+    await expect(page.getByTestId('active-request').getByTestId('request-parcel')).toContainText('Geluksarmbandje');
+    await expect.poll(()=>page.getByTestId('active-request').getByTestId('request-parcel').locator('use').evaluate(el=>el.getBBox().width)).toBeGreaterThan(0);
+    await page.locator('[data-request-locate]').scrollIntoViewIfNeeded();
+    await expect(page.locator('[data-request-locate]')).toBeInViewport();
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth)).toBe(false);
+  }
+  await page.setViewportSize({width:390,height:844});
+  await page.locator('#requests-content').evaluate(el=>el.scrollTop=0);
+  await page.screenshot({path:'output/personal-request-mobile.png'});
+  await visitWolkje(page);
+  await page.getByRole('button',{name:'Fijn je weer te zien',exact:true}).click();
+  await expect(page.getByTestId('request-thanks')).toBeInViewport();
+  await page.screenshot({path:'output/personal-request-thanks.png'});
+  expect(errors).toEqual([]);
+});
+
 test('Slapen, uitschakelen en teruggeven behouden bestaande voortgang', async ({page,context}) => {
   const items=await requestGame(page,context); await acceptRequest(page);
   const target=items.find(i=>i.id==='wieringer-wolkje');
@@ -137,7 +217,7 @@ test('Slapen, uitschakelen en teruggeven behouden bestaande voortgang', async ({
 
 test('Geweigerde opslag doet niet alsof een verzoekje is aangenomen', async ({page,context}) => {
   await requestGame(page,context);
-  await page.getByTestId('entity-marker-molenmaatje').click();
+  await page.getByTestId('entity-marker-havenpluimpje').click();
   await page.evaluate(()=>{
     const original=Storage.prototype.setItem;
     Storage.prototype.setItem=function(key,value){if(key==='sammeltjes-friend-requests-v1')throw new DOMException('Full','QuotaExceededError');return original.call(this,key,value);};
@@ -410,5 +490,7 @@ test('Een aangenomen verzoekje blijft ook offline beschikbaar', async ({browser,
   await page.locator('[data-view="requests"]').click();
   await expect(page.getByTestId('active-request')).toContainText('Wieringer Wolkje');
   await expect(page.locator('#request-stamp-count')).toHaveText('0 vriendschapsstempels');
+  await expect(page.getByTestId('active-request')).toContainText('Geluksarmbandje');
+  expect(await page.evaluate(async()=>!!(await caches.match('./assets/request-items.svg')))).toBe(true);
   await context.close();
 });

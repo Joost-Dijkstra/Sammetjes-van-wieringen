@@ -7,6 +7,71 @@ const giver=friend('giver'), near=friend('near',{lng:5.021}), far=friend('far',{
 const found=new Set(['giver','near','far']);
 const empty=()=>Requests.normalize(null);
 
+test('Alle vijftien persoonlijke verhalen hebben bestaande vriendjes, tekst en een icoon',()=>{
+  const data=require('../data/sammeltjes.json');
+  const ids=new Set(data.map(i=>i.id));
+  const sprite=require('node:fs').readFileSync(require('node:path').join(__dirname,'../assets/request-items.svg'),'utf8');
+  assert.equal(Requests.CATALOG.length,15);
+  assert.equal(new Set(Requests.CATALOG.map(q=>q.id)).size,15);
+  assert.equal(new Set(Requests.CATALOG.map(q=>q.giverId)).size,15);
+  for(const q of Requests.CATALOG) {
+    assert.ok(ids.has(q.giverId),q.giverId);
+    assert.ok(q.targets.length);
+    for(const id of q.targets) {assert.ok(ids.has(id),id);assert.notEqual(id,q.giverId);}
+    for(const key of ['title','message','thanks','story','item','icon']) assert.ok(q[key],q.id+':'+key);
+    assert.ok(sprite.includes('id="'+q.icon+'"'),q.icon);
+    if(q.fixed) assert.equal(q.targets.length,1);
+  }
+});
+test('Vaste verhalen wisselen nooit van ontvanger, ook niet voor een nabijer vriendje',()=>{
+  const giver=friend('schapenherdertje'), oma=friend('oma-wierwortel',{lng:5.08}), other=friend('boer-bietje');
+  const known=new Set([giver.id,oma.id,other.id]);
+  const offer=Requests.offer(giver,[giver,other,oma],known,empty(),now);
+  assert.equal(offer.targetId,oma.id);
+  assert.equal(offer.templateId,'breinaalden');
+  assert.equal(Requests.offer(giver,[giver,other],known,empty(),now),null);
+  assert.equal(Requests.offer(giver,[giver,{...oma,active:false},other],known,empty(),now),null);
+});
+test('Wisselcadeautjes kiezen alleen passende bekende ontvangers en blijven dichtbij',()=>{
+  const giver=friend('mosselmop'), target=friend('nettenvissertje',{lng:5.025}), wrong=friend('oma-wierwortel');
+  const known=new Set([giver.id,target.id,wrong.id]);
+  assert.equal(Requests.offer(giver,[wrong,giver,target],known,empty(),now).targetId,target.id);
+  assert.equal(Requests.offer(giver,[wrong,giver,{...target,lng:5.2}],known,empty(),now),null);
+  assert.equal(Requests.offer({...giver,active:false},[giver,target],known,empty(),now),null);
+  assert.equal(Requests.offer({...giver,availabilityMode:'schedule',activeFrom:'01:00',activeUntil:'02:00'},[giver,target],known,empty(),now),null);
+});
+test('Ieder persoonlijk verzoekje heeft met huidige woonplekken een mogelijke ontvanger',()=>{
+  // Test geography separately from daily schedules, without moving production friends.
+  const data=require('../data/sammeltjes.json').map(i=>({...i,availabilityMode:'all-day'}));
+  const known=new Set(data.map(i=>i.id));
+  for(const q of Requests.CATALOG) assert.ok(Requests.offer(data.find(i=>i.id===q.giverId),data,known,empty(),now),q.id);
+});
+test('Persoonlijke voorwerpen en ontvangers blijven bij herladen en bezorgen gelijk',()=>{
+  const request={giverId:'schapenherdertje',targetId:'oma-wierwortel',templateId:'breinaalden'};
+  const stored=Requests.normalize(JSON.parse(JSON.stringify({active:request,completed:[]})));
+  assert.deepEqual(stored.active,request);
+  const completed=Requests.complete(stored,request.targetId,true,now);
+  assert.equal(completed.completed[0].templateId,'breinaalden');
+  const tale=Requests.describe(completed.completed[0],null,{name:'Oma Wierwortel'});
+  assert.ok(tale.message.includes('Oma Wierwortel'));
+  assert.ok(tale.thanks.includes('sokken'));
+  assert.equal(tale.personal,true);
+});
+test('Oude actieve groeten en verdiende stempels worden niet omgeschreven of gewist',()=>{
+  const legacy={active:{giverId:'molenmaatje',targetId:'wieringer-wolkje'},completed:[{giverId:'schapenherdertje',targetId:'oma-wierwortel',completedAt:now.toISOString()}]};
+  assert.deepEqual(Requests.normalize(legacy),legacy);
+  assert.equal(Requests.describe(legacy.active,{biome:'molen'},{name:'Wolkje'}).personal,false);
+  assert.equal(Requests.describe(legacy.completed[0],{biome:'schaapsveld'},null).personal,false);
+  assert.equal(Requests.complete(legacy,'wieringer-wolkje',true,now).completed.length,2);
+});
+test('Onbekende of onjuiste templategegevens vallen veilig terug op een groet',()=>{
+  for(const templateId of ['<img onerror=bad>','breinaalden','missing']) {
+    const active=Requests.normalize({active:{giverId:'molenmaatje',targetId:'wieringer-wolkje',templateId}}).active;
+    assert.deepEqual(active,{giverId:'molenmaatje',targetId:'wieringer-wolkje'});
+    assert.equal(Requests.describe(active,null,null).personal,false);
+  }
+});
+
 test('Verzoekjes kiezen een bekend, wakker vriendje dichtbij zonder toeval',()=>{
   assert.deepEqual(Requests.offer(giver,[giver,far,near],found,empty(),now),{giverId:'giver',targetId:'near'});
   assert.equal(Requests.offer(giver,[giver,near],new Set(['giver']),empty(),now),null);
