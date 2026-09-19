@@ -113,6 +113,8 @@ Bij fouten zijn screenshots en traces beschikbaar. Video is optioneel via `PLAYW
 
 ## Telefoon En Offline
 
+Het app-icoon toont Kwelder Sprietje, met dezelfde prentenboekuitstraling als de game. De bron staat in `assets/icons/sprietje-source.png`. `npm run prepare:icons` maakt de vier kleine PNG-formaten; dit draait ook tijdens de gewone build. Manifest, browsericoon, Apple-touch-icoon en offlinecache gebruiken dezelfde illustratie. De oude iconen blijven als herstelmogelijkheid bewaard. Bestaande beginschermiconen worden door het besturingssysteem beheerd en hoeven niet direct mee te verversen; wis hiervoor geen browsergegevens, want daar staat je verzameling.
+
 Installeer de HTTPS-website via **Zet op beginscherm** (iPhone) of **App installeren** (Android). Na een eerste volledig geladen online bezoek zijn de app en verzameling offline te openen. Alleen eerder bekeken kaarttegels zijn beschikbaar; dit is geen volledige offline eilandkaart.
 
 Test een nieuwe versie ook tijdens een echte wandeling. GPS-gedrag, leesbaarheid in zonlicht en batterijgebruik zijn niet volledig door browsertests te controleren.

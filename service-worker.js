@@ -1,4 +1,4 @@
-const CACHE_VERSION = "v12";
+const CACHE_VERSION = "v13";
 const SHELL_CACHE = `sammeltjes-shell-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `sammeltjes-runtime-${CACHE_VERSION}`;
 const TILE_CACHE = `sammeltjes-tiles-${CACHE_VERSION}`;
@@ -22,9 +22,10 @@ const SHELL_ASSETS = [
   "./app.js?v=20260919",
   "./assets/request-items.svg",
   "./manifest.webmanifest",
-  "./assets/icons/icon-192.png",
-  "./assets/icons/icon-512.png",
-  "./assets/icons/apple-touch-icon.png"
+  "./assets/icons/sprietje-48.png",
+  "./assets/icons/sprietje-180.png",
+  "./assets/icons/sprietje-192.png",
+  "./assets/icons/sprietje-512.png"
 ];
 
 self.addEventListener("install", (event) => {
